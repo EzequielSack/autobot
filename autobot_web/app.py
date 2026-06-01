@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 app = Flask(__name__)
-app.secret_key = "autobot_secret_2024_ezequielsack"
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "autobot_secret_2024_ezequielsack")
 
 REFERRAL = "https://partner.bybit.com/b/59453"
 
