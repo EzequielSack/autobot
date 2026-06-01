@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AUTOBOT — Cómo lo construimos</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,800;0,900;1,800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0b14;--card:rgba(255,255,255,0.03);--bord:rgba(201,132,74,0.18);
+--gold:#c9844a;--gold2:#e8a862;--text:#f4f0e8;--mut:rgba(244,240,232,0.45);--green:#4caf7d;--red:#e05555}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;line-height:1.6}
+.wrap{max-width:900px;margin:0 auto;padding:60px 32px 80px}
+
+/* Hero */
+.hero{text-align:center;margin-bottom:70px}
+.eyebrow{font-size:12px;font-weight:700;color:var(--gold);letter-spacing:3px;text-transform:uppercase;margin-bottom:18px}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(36px,6vw,68px);font-weight:900;letter-spacing:-2px;line-height:1.05;margin-bottom:16px}
+.hero h1 em{color:var(--gold);font-style:italic}
+.hero p{font-size:17px;color:var(--mut);max-width:540px;margin:0 auto}
+
+/* Timeline */
+.timeline{position:relative;padding-left:48px}
+.timeline::before{content:'';position:absolute;left:15px;top:8px;bottom:8px;width:2px;background:linear-gradient(180deg,var(--gold),rgba(201,132,74,0.1))}
+.step{position:relative;margin-bottom:36px}
+.dot{position:absolute;left:-48px;top:0;width:32px;height:32px;border-radius:50%;background:var(--bg);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:var(--gold);z-index:2}
+.step-card{background:var(--card);border:1px solid var(--bord);border-radius:16px;padding:24px 28px;transition:all .2s}
+.step-card:hover{border-color:rgba(201,132,74,0.4);transform:translateX(4px)}
+.step-tag{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+.step-card h3{font-size:21px;font-weight:800;letter-spacing:-.4px;margin-bottom:10px}
+.step-card p{font-size:14.5px;color:var(--mut);margin-bottom:0}
+.step-card .punch{color:var(--text);font-weight:600}
+
+/* Stats destacados dentro de pasos */
+.mini-stats{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.mini{background:rgba(201,132,74,0.06);border:1px solid rgba(201,132,74,0.18);border-radius:10px;padding:10px 16px;flex:1;min-width:120px}
+.mini-n{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:var(--gold);line-height:1}
+.mini-l{font-size:11px;color:var(--mut);margin-top:4px}
+
+/* Sección final */
+.divider{height:1px;background:var(--bord);margin:60px 0}
+.final{text-align:center}
+.final h2{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,46px);font-weight:900;letter-spacing:-1px;margin-bottom:14px}
+.final h2 em{color:var(--gold);font-style:italic}
+.final p{font-size:16px;color:var(--mut);max-width:520px;margin:0 auto 32px}
+.flow{display:flex;flex-direction:column;gap:8px;max-width:440px;margin:0 auto;text-align:left}
+.flow-item{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--bord);border-radius:12px;padding:14px 20px;font-size:14px}
+.flow-num{width:26px;height:26px;border-radius:50%;background:rgba(201,132,74,0.12);border:1px solid var(--bord);color:var(--gold);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.flow-arrow{text-align:center;color:var(--gold);font-size:14px;opacity:.5}
+
+/* Disclaimer */
+.note{margin-top:48px;padding:18px 24px;background:rgba(201,132,74,0.04);border:1px solid rgba(201,132,74,0.18);border-radius:12px;font-size:13px;color:var(--mut);text-align:center}
+.note strong{color:var(--gold)}
+
+/* Footer */
+.foot{text-align:center;margin-top:50px;font-size:13px;color:var(--mut)}
+.foot strong{color:var(--text)}
+
+@media(max-width:600px){.wrap{padding:40px 18px}.timeline{padding-left:38px}.dot{left:-38px;width:28px;height:28px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="eyebrow">Detrás de escena · Proyecto AUTOBOT</div>
+    <h1>Cómo construí un<br>bot de trading <em>real</em></h1>
+    <p>El paso a paso de cómo pasamos de una idea a un bot funcionando, validado con datos reales y listo para que cualquiera lo use.</p>
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="timeline">
+
+    <div class="step">
+      <div class="dot">1</div>
+      <div class="step-card">
+        <div class="step-tag">La idea</div>
+        <h3>¿Puede una persona común armar un bot que funcione?</h3>
+        <p>Arrancamos con una pregunta simple: <span class="punch">¿se puede operar Bitcoin de forma automática, sin estar pegado a la pantalla?</span> La estrategia mira 6 cosas del mercado al mismo tiempo y solo entra cuando todas están alineadas.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="dot">2</div>
+      <div class="step-card">
+        <div class="step-tag">La prueba de fuego</div>
+        <h3>Lo testeamos contra 1 año de historia real</h3>
+        <p>Antes de arriesgar un peso, le dimos al bot <span class="punch">datos reales de todo un año</span> y lo dejamos "operar el pasado" para ver cómo le habría ido. Sin inventar nada.</p>
+        <div class="mini-stats">
+          <div class="mini"><div class="mini-n">+699%</div><div class="mini-l">Retorno simulado en 1 año</div></div>
+          <div class="mini"><div class="mini-n">-13%</div><div class="mini-l">Peor caída</div></div>
+          <div class="mini"><div class="mini-n">$2.83</div><div class="mini-l">Gana por cada $1 que pierde</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="dot">3</div>
+      <div class="step-card">
+        <div class="step-tag">No nos conformamos</div>
+        <h3>Lo rompimos para hacerlo más fuerte</h3>
+        <p>Probamos decenas de versiones: bajamos el riesgo, ajustamos cuándo entrar y salir, hasta le sacamos los días y horarios donde históricamente perdía. <span class="punch">El objetivo no era el número más alto, sino el más confiable.</span></p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="dot">4</div>
+      <div class="step-card">
+        <div class="step-tag">La seguridad primero</div>
+        <h3>Le pusimos frenos automáticos</h3>
+        <p>El bot arriesga muy poquito en cada operación y, si tiene una mala racha, <span class="punch">se frena solo</span>. La idea siempre fue: primero sobrevivir, después crecer.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="dot">5</div>
+      <div class="step-card">
+        <div class="step-tag">Que se vea lindo</div>
+        <h3>Le dimos cara y diseño propio</h3>
+        <p>Armamos una página web y una app con la identidad del canal, <span class="punch">explicada para que cualquiera la entienda</span> — sin palabras raras ni cosas técnicas. Si no lo entiende mi vieja, no sirve.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="dot">6</div>
+      <div class="step-card">
+        <div class="step-tag">Para todos</div>
+        <h3>Lo hicimos descargable en un click</h3>
+        <p>Cualquiera puede bajarlo, abrirlo, pegar su cuenta y empezar. <span class="punch">Sin instalar nada técnico.</span> Y lo más importante: el dinero de cada uno queda siempre en su propia cuenta — nadie más lo toca.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- FINAL -->
+  <div class="final">
+    <h2>El resultado: <em>tan simple</em><br>como bajar una app</h2>
+    <p>Hoy cualquiera puede empezar en minutos siguiendo estos pasos:</p>
+    <div class="flow">
+      <div class="flow-item"><div class="flow-num">1</div><div>Entrás a la página</div></div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-item"><div class="flow-num">2</div><div>Creás tu cuenta gratis</div></div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-item"><div class="flow-num">3</div><div>Descargás el bot</div></div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-item"><div class="flow-num">4</div><div>Lo conectás y empieza a operar solo 🤖</div></div>
+    </div>
+  </div>
+
+  <!-- NOTE -->
+  <div class="note">
+    ⚗️ <strong>Importante:</strong> AUTOBOT es un proyecto experimental y educativo. No es asesoramiento financiero. El trading tiene riesgo real — cada uno opera con lo que puede perder y es responsable de su propio capital.
+  </div>
+
+  <div class="foot">
+    Un experimento de <strong>Ezequiel Sack</strong> · construido en vivo, paso a paso
+  </div>
+
+</div>
+</body>
+</html>

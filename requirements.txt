@@ -1,0 +1,26 @@
+# EZBOT v2.0 — Dependencias
+# Python 3.11+
+# pip install -r requirements.txt
+
+# API de Bybit
+pybit>=5.6.0
+
+# Datos y cálculo
+pandas>=2.1.0
+numpy>=1.26.0
+
+# Variables de entorno
+python-dotenv>=1.0.0
+
+# Gráficos (backtest equity curve)
+matplotlib>=3.8.0
+
+# Dashboard en consola
+rich>=13.7.0
+
+# HTTP requests (backtest endpoint público)
+requests>=2.31.0
+
+# Dashboard web
+streamlit>=1.35.0
+plotly>=5.22.0

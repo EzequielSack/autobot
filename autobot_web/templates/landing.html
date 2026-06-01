@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AUTOBOT — por Ezequiel Sack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0b14;--bg2:#0e0f1c;--card:rgba(255,255,255,0.03);
+  --bord:rgba(201,132,74,0.18);--gold:#c9844a;--gold2:#e8a862;
+  --text:#f4f0e8;--mut:rgba(244,240,232,0.42);--red:#e05555;
+  --tg:#229ed9;--yt:#ff0000;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;background:rgba(10,11,20,0.93);backdrop-filter:blur(20px);border-bottom:1px solid rgba(201,132,74,0.1)}
+.nav-left{display:flex;align-items:center;gap:14px}
+.logo{font-size:19px;font-weight:900;color:var(--text);text-decoration:none;letter-spacing:-.5px}
+.logo span{color:var(--gold)}
+.nav-ticker{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700}
+.tdot{width:5px;height:5px;border-radius:50%;background:#f0c040;animation:blink 2s ease infinite}
+.nav-links{display:flex;align-items:center;gap:24px}
+.nav-links a{color:var(--mut);text-decoration:none;font-size:13px;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.nav-right{display:flex;align-items:center;gap:8px}
+.btn-tg{display:flex;align-items:center;gap:6px;background:rgba(34,158,217,0.1);border:1px solid rgba(34,158,217,0.25);color:#5bc8f5;font-size:12px;font-weight:700;padding:7px 13px;border-radius:8px;text-decoration:none;transition:all .2s}
+.btn-tg:hover{background:rgba(34,158,217,0.2);border-color:rgba(34,158,217,0.5)}
+.btn-yt{display:flex;align-items:center;gap:6px;background:rgba(255,0,0,0.09);border:1px solid rgba(255,60,60,0.22);color:#ff6b6b;font-size:12px;font-weight:700;padding:7px 13px;border-radius:8px;text-decoration:none;transition:all .2s}
+.btn-yt:hover{background:rgba(255,0,0,0.18)}
+.btn-yt svg,.btn-tg svg{width:15px;height:15px;fill:currentColor;flex-shrink:0}
+.btn-cta{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0b14;font-weight:800;font-size:13px;padding:9px 20px;border-radius:8px;text-decoration:none;transition:all .2s;box-shadow:0 4px 16px rgba(201,132,74,0.3)}
+.btn-cta:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(201,132,74,0.45)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* EXP BANNER */
+.exp-banner{position:fixed;top:60px;left:0;right:0;z-index:199;background:rgba(201,132,74,0.06);border-bottom:1px solid rgba(201,132,74,0.12);text-align:center;padding:6px 20px;font-size:11px;color:var(--mut);backdrop-filter:blur(10px)}
+.exp-banner strong{color:var(--gold)}
+
+/* URGENCIA BAR */
+.urgency-bar{background:rgba(201,132,74,0.05);border-bottom:1px solid rgba(201,132,74,0.15);padding:10px 32px;display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap;margin-top:97px}
+.urg-item{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--mut)}
+.urg-item strong{color:var(--text)}
+.urg-item.hot strong{color:var(--gold)}
+.urg-sep{width:1px;height:16px;background:rgba(255,255,255,0.08)}
+.spots-bar{width:120px;height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
+.spots-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:3px;width:53%}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:120px 40px 80px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:1100px;height:1100px;background:radial-gradient(ellipse,rgba(201,132,74,0.07) 0%,transparent 65%);pointer-events:none}
+.badge-live{display:inline-flex;align-items:center;gap:8px;background:rgba(201,132,74,0.08);border:1px solid rgba(201,132,74,0.25);border-radius:100px;padding:7px 18px;margin-bottom:28px;font-size:11px;font-weight:700;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase;animation:fadeUp .6s ease both}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:blink 2s ease infinite}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(40px,7vw,90px);font-weight:900;letter-spacing:-2px;line-height:1.02;color:var(--text);margin-bottom:8px;animation:fadeUp .6s .1s ease both}
+.hero h1 em{color:var(--gold);font-style:italic}
+.hero-sub{font-size:clamp(14px,2vw,18px);color:var(--mut);line-height:1.7;max-width:520px;margin:16px auto 40px;animation:fadeUp .6s .2s ease both}
+.hero-sub strong{color:var(--text)}
+.hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;animation:fadeUp .6s .3s ease both}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0b14;font-weight:800;font-size:15px;padding:16px 36px;border-radius:10px;text-decoration:none;transition:all .2s;box-shadow:0 4px 24px rgba(201,132,74,0.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(201,132,74,0.5)}
+.btn-ghost{background:rgba(255,255,255,0.04);color:var(--text);font-weight:600;font-size:15px;padding:16px 36px;border-radius:10px;text-decoration:none;border:1px solid rgba(255,255,255,0.1);transition:all .2s}
+.btn-ghost:hover{background:rgba(255,255,255,0.08);border-color:rgba(201,132,74,0.35)}
+.btn-telegram-hero{display:inline-flex;align-items:center;gap:8px;background:rgba(34,158,217,0.1);border:1px solid rgba(34,158,217,0.25);color:#5bc8f5;font-weight:700;font-size:15px;padding:16px 36px;border-radius:10px;text-decoration:none;transition:all .2s}
+.btn-telegram-hero:hover{background:rgba(34,158,217,0.2)}
+
+/* STATS */
+.stats-bar{display:flex;margin:56px auto 0;max-width:750px;background:rgba(255,255,255,0.025);border:1px solid var(--bord);border-radius:18px;overflow:hidden;animation:fadeUp .6s .4s ease both}
+.stat{flex:1;padding:22px 16px;text-align:center;border-right:1px solid var(--bord)}
+.stat:last-child{border-right:none}
+.stat-n{font-family:'Playfair Display',serif;font-size:30px;font-weight:900;color:var(--text);letter-spacing:-1px;line-height:1}
+.stat-n.gold{color:var(--gold)}
+.stat-l{font-size:10px;color:var(--mut);margin-top:6px;font-weight:500;line-height:1.4}
+
+/* USERS COUNTER */
+.users-counter{display:flex;align-items:center;justify-content:center;gap:12px;margin:32px auto 0;max-width:360px;background:rgba(255,255,255,0.025);border:1px solid var(--bord);border-radius:12px;padding:14px 24px;animation:fadeUp .6s .5s ease both}
+.users-avatars{display:flex}
+.user-av{width:28px;height:28px;border-radius:50%;border:2px solid var(--bg);margin-left:-8px;font-size:14px;display:flex;align-items:center;justify-content:center;background:var(--bg2)}
+.user-av:first-child{margin-left:0}
+.users-txt{font-size:13px;font-weight:600;color:var(--mut)}
+.users-txt strong{color:var(--text)}
+
+/* SECCIONES */
+section{padding:80px 40px;max-width:1200px;margin:0 auto}
+.sec-badge{font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:2.5px;margin-bottom:16px}
+.sec-title{font-family:'Playfair Display',serif;font-size:clamp(26px,4vw,50px);font-weight:900;letter-spacing:-1.5px;line-height:1.1;margin-bottom:14px}
+.sec-sub{font-size:15px;color:var(--mut);line-height:1.7;max-width:500px}
+
+/* INCLUDES */
+.inc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:44px}
+.inc-card{background:var(--card);border:1px solid var(--bord);border-radius:16px;padding:26px 24px;display:flex;align-items:flex-start;gap:14px;transition:all .25s}
+.inc-card:hover{border-color:rgba(201,132,74,0.35);transform:translateY(-3px);box-shadow:0 16px 48px rgba(201,132,74,0.08)}
+.inc-ic{font-size:24px;flex-shrink:0;margin-top:2px}
+.inc-t{font-size:14px;font-weight:800;color:var(--text);margin-bottom:5px}
+.inc-d{font-size:12.5px;color:var(--mut);line-height:1.65}
+.inc-badge{display:inline-block;margin-top:7px;font-size:9.5px;font-weight:700;color:var(--gold);background:rgba(201,132,74,0.1);border:1px solid rgba(201,132,74,0.2);border-radius:100px;padding:2px 9px;letter-spacing:.5px}
+
+/* HOW */
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:44px}
+.how-card{background:var(--card);border:1px solid var(--bord);border-radius:18px;padding:32px 26px;transition:all .25s;position:relative;overflow:hidden}
+.how-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:opacity .25s}
+.how-card:hover{border-color:rgba(201,132,74,0.35);transform:translateY(-4px);box-shadow:0 20px 60px rgba(201,132,74,0.08)}
+.how-card:hover::before{opacity:1}
+.how-n{font-size:10px;font-weight:800;color:var(--gold);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:18px}
+.how-ic{font-size:30px;margin-bottom:14px;display:block}
+.how-t{font-size:17px;font-weight:800;color:var(--text);margin-bottom:9px;letter-spacing:-.3px}
+.how-d{font-size:13px;color:var(--mut);line-height:1.75}
+
+/* RESULTADOS */
+.res-wrap{background:var(--bg2);border-top:1px solid var(--bord);border-bottom:1px solid var(--bord);padding:80px 40px}
+.res-inner{max-width:1200px;margin:0 auto}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center;margin-top:44px}
+.res-stack{display:flex;flex-direction:column;gap:10px}
+.res-card{background:var(--card);border:1px solid var(--bord);border-radius:14px;padding:22px 24px;display:flex;align-items:center;justify-content:space-between;transition:all .2s}
+.res-card:hover{border-color:rgba(201,132,74,0.3)}
+.res-card.main{background:linear-gradient(135deg,rgba(201,132,74,0.09),rgba(201,132,74,0.02));border-color:rgba(201,132,74,0.3)}
+.rl{font-size:10px;color:var(--mut);font-weight:700;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:7px}
+.rv{font-family:'Playfair Display',serif;font-size:34px;font-weight:900;letter-spacing:-1px;color:var(--text)}
+.rv.gold{color:var(--gold)} .rv.red{color:var(--red)}
+.rs{font-size:11px;color:var(--mut);margin-top:4px}
+.res-chart{background:var(--card);border:1px solid var(--bord);border-radius:18px;padding:24px}
+.chart-lbl{font-size:10px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
+.chart-svg{width:100%;height:185px}
+.exp-note{margin-top:14px;padding:14px 18px;background:rgba(201,132,74,0.04);border:1px solid rgba(201,132,74,0.18);border-radius:10px;font-size:12px;color:var(--mut);line-height:1.7}
+.exp-note strong{color:var(--gold)}
+
+/* TESTIMONIALES */
+.testi-wrap{padding:80px 40px;max-width:1200px;margin:0 auto}
+.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:44px}
+.testi-card{background:var(--card);border:1px solid var(--bord);border-radius:16px;padding:24px 22px;transition:all .25s;position:relative}
+.testi-card:hover{border-color:rgba(201,132,74,0.3);transform:translateY(-3px)}
+.testi-stars{color:var(--gold);font-size:13px;letter-spacing:2px;margin-bottom:12px}
+.testi-text{font-size:13.5px;color:var(--text);line-height:1.7;margin-bottom:16px;font-style:italic}
+.testi-author{display:flex;align-items:center;gap:10px}
+.testi-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.testi-name{font-size:13px;font-weight:700;color:var(--text)}
+.testi-handle{font-size:11px;color:var(--mut)}
+.testi-source{position:absolute;top:18px;right:18px;font-size:10px;color:var(--mut);font-weight:600;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:100px;padding:2px 9px}
+
+/* TELEGRAM SECTION */
+.tg-section{background:linear-gradient(135deg,rgba(34,158,217,0.07),rgba(10,11,20,0) 70%);border-top:1px solid rgba(34,158,217,0.15);border-bottom:1px solid rgba(34,158,217,0.1);padding:80px 40px}
+.tg-inner{max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:56px;align-items:center}
+.tg-icon{font-size:72px;text-align:center;filter:drop-shadow(0 0 30px rgba(34,158,217,0.3))}
+.tg-perks{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+.tg-perk{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--mut)}
+.tg-perk::before{content:'✓';color:#5bc8f5;font-weight:800;flex-shrink:0}
+.btn-tg-big{display:inline-flex;align-items:center;gap:10px;background:rgba(34,158,217,0.12);border:2px solid rgba(34,158,217,0.35);color:#5bc8f5;font-weight:800;font-size:16px;padding:18px 36px;border-radius:12px;text-decoration:none;transition:all .2s;margin-top:28px;box-shadow:0 4px 24px rgba(34,158,217,0.15)}
+.btn-tg-big:hover{background:rgba(34,158,217,0.22);border-color:rgba(34,158,217,0.6);transform:translateY(-2px);box-shadow:0 12px 40px rgba(34,158,217,0.25)}
+.btn-tg-big svg{width:22px;height:22px;fill:#5bc8f5;flex-shrink:0}
+
+/* YOUTUBE */
+.yt-section{background:var(--bg2);padding:80px 40px;border-top:1px solid var(--bord)}
+.yt-inner{max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.yt-stat-n{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--gold);letter-spacing:-.5px}
+.yt-stat-l{font-size:11px;color:var(--mut);margin-top:3px}
+.yt-stats{display:flex;gap:28px;margin:20px 0 28px}
+.btn-subscribe{display:inline-flex;align-items:center;gap:10px;background:#ff0000;color:#fff;font-weight:800;font-size:15px;padding:16px 30px;border-radius:10px;text-decoration:none;transition:all .2s;box-shadow:0 4px 20px rgba(255,0,0,0.35)}
+.btn-subscribe:hover{background:#cc0000;transform:translateY(-2px);box-shadow:0 10px 32px rgba(255,0,0,0.5)}
+.btn-subscribe svg{width:20px;height:20px;fill:#fff;flex-shrink:0}
+.yt-card{background:rgba(255,255,255,0.025);border:1px solid var(--bord);border-radius:18px;padding:28px;text-align:center}
+.yt-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 14px}
+.yt-name{font-size:17px;font-weight:800;color:var(--text);margin-bottom:3px}
+.yt-handle{font-size:12px;color:var(--mut);margin-bottom:14px}
+.yt-desc{font-size:13px;color:var(--mut);line-height:1.7;margin-bottom:18px}
+.yt-tags{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
+.yt-tag{font-size:10px;font-weight:600;color:var(--gold);background:rgba(201,132,74,0.08);border:1px solid rgba(201,132,74,0.2);border-radius:100px;padding:3px 11px}
+
+/* FAQ */
+.faq-list{margin-top:44px;display:flex;flex-direction:column;gap:8px}
+.faq-item{background:var(--card);border:1px solid var(--bord);border-radius:14px;overflow:hidden;transition:border-color .2s}
+.faq-item:hover{border-color:rgba(201,132,74,0.3)}
+.faq-q{width:100%;background:none;border:none;color:var(--text);font-size:14.5px;font-weight:600;padding:20px 26px;text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:inherit}
+.faq-icon{font-size:20px;color:var(--gold);transition:transform .25s;flex-shrink:0}
+.faq-item.open .faq-icon{transform:rotate(45deg)}
+.faq-a{display:none;padding:0 26px 20px;font-size:13.5px;color:var(--mut);line-height:1.75}
+.faq-item.open .faq-a{display:block}
+
+/* EMAIL SIGNUP */
+.email-wrap{background:var(--bg2);border-top:1px solid var(--bord);padding:60px 40px}
+.email-inner{max-width:560px;margin:0 auto;text-align:center}
+.email-form{display:flex;gap:10px;margin-top:24px}
+.email-input{flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--bord);border-radius:10px;color:var(--text);font-size:14px;font-family:inherit;padding:14px 16px;outline:none;transition:border-color .2s}
+.email-input:focus{border-color:rgba(201,132,74,0.4)}
+.email-input::placeholder{color:rgba(255,255,255,0.2)}
+.email-btn{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0b14;font-weight:800;font-size:14px;padding:14px 24px;border:none;border-radius:10px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap}
+.email-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(201,132,74,0.4)}
+.email-note{font-size:11px;color:rgba(255,255,255,0.18);margin-top:12px}
+
+/* CTA */
+.cta-wrap{text-align:center;padding:100px 40px;position:relative;overflow:hidden}
+.cta-wrap::before{content:'';position:absolute;bottom:-100px;left:50%;transform:translateX(-50%);width:900px;height:900px;background:radial-gradient(ellipse,rgba(201,132,74,0.07) 0%,transparent 65%);pointer-events:none}
+.cta-wrap h2{font-family:'Playfair Display',serif;font-size:clamp(30px,5vw,66px);font-weight:900;letter-spacing:-1.5px;line-height:1.05;margin-bottom:18px}
+.cta-wrap h2 em{color:var(--gold);font-style:italic}
+.cta-wrap p{font-size:16px;color:var(--mut);margin-bottom:36px}
+.cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+.cta-note{font-size:12px;color:rgba(255,255,255,0.2);max-width:440px;margin-inline:auto;line-height:1.6}
+
+/* FOOTER */
+footer{border-top:1px solid var(--bord);padding:32px 40px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.footer-logo{font-size:16px;font-weight:900;letter-spacing:-.3px}
+.footer-logo span{color:var(--gold)}
+.footer-by{font-size:11.5px;color:var(--mut);margin-top:4px}
+.footer-by a{color:var(--gold);text-decoration:none;font-weight:600}
+.footer-exp{background:rgba(201,132,74,0.07);border:1px solid rgba(201,132,74,0.2);border-radius:100px;padding:5px 14px;font-size:11px;color:var(--gold);font-weight:700}
+.footer-links{display:flex;gap:16px;flex-wrap:wrap}
+.footer-links a{color:var(--mut);text-decoration:none;font-size:12px;font-weight:500;transition:color .2s}
+.footer-links a:hover{color:var(--gold)}
+
+/* CÓMO EMPEZAR */
+.steps-line{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:48px;position:relative}
+.step-card{background:var(--card);border:1px solid var(--bord);border-radius:18px;padding:28px 24px;transition:all .25s;display:flex;flex-direction:column;min-height:210px}
+.step-card:hover{border-color:rgba(201,132,74,0.35);transform:translateY(-4px);box-shadow:0 20px 60px rgba(201,132,74,0.08)}
+.step-num-big{font-family:'Playfair Display',serif;font-size:40px;font-weight:900;color:var(--gold);line-height:1;margin-bottom:16px;opacity:.9}
+.step-head{font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:-.3px}
+.step-text{font-size:13px;color:var(--mut);line-height:1.65;flex:1}
+.step-action{margin-top:14px;font-size:13px;font-weight:700;color:var(--gold);text-decoration:none;transition:color .2s}
+.step-action:hover{color:var(--gold2)}
+.step-hint{margin-top:14px;font-size:11px;color:var(--mut);background:rgba(201,132,74,0.06);border:1px solid rgba(201,132,74,0.15);border-radius:8px;padding:8px 10px;line-height:1.5}
+
+/* ANIM */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* Chart draw animation */
+#chart-line{stroke-dasharray:900;stroke-dashoffset:900}
+#chart-area{opacity:0;transition:opacity 1s ease 1.4s}
+#chart-dot{opacity:0;transition:opacity .4s ease 2s}
+#chart-label{opacity:0;transition:opacity .4s ease 2.1s}
+.chart-animate #chart-line{animation:drawLine 2s cubic-bezier(0.45,0,0.2,1) forwards}
+.chart-animate #chart-area{opacity:1}
+.chart-animate #chart-dot{opacity:1}
+.chart-animate #chart-label{opacity:1}
+@keyframes drawLine{to{stroke-dashoffset:0}}
+@keyframes dotPulse{0%,100%{r:4}50%{r:5.5}}
+.chart-animate #chart-dot{animation:drawLine 0s,dotPulse 2s ease-in-out 2s infinite}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  nav{padding:0 16px} .nav-links{display:none}
+  .hero{padding:50px 20px 60px}
+  section,.testi-wrap,.yt-section,.res-wrap,.tg-section,.email-wrap,.cta-wrap{padding:60px 20px}
+  .how-grid,.res-grid,.inc-grid,.testi-grid,.yt-inner,.tg-inner{grid-template-columns:1fr;gap:16px}
+  .steps-line{grid-template-columns:1fr 1fr;gap:10px}
+  .step-card{min-height:auto}
+  .stats-bar{flex-direction:column} .stat{border-right:none;border-bottom:1px solid var(--bord)} .stat:last-child{border-bottom:none}
+  .email-form{flex-direction:column}
+  .tg-icon{display:none}
+  footer{flex-direction:column;align-items:flex-start;padding:24px 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-left">
+    <a href="/" class="logo">AUTO<span>BOT</span></a>
+    <div class="nav-ticker"><div class="tdot"></div><span id="btc-price">BTC cargando…</span></div>
+  </div>
+  <div class="nav-links">
+    <a href="#incluye">Qué incluye</a>
+    <a href="#empezar">Cómo empezar</a>
+    <a href="#resultados">Resultados</a>
+    <a href="#faq">FAQ</a>
+  </div>
+  <div class="nav-right">
+    <a href="https://t.me/EzequielSackTelegram" target="_blank" class="btn-tg">
+      <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.17-1.97 9.28c-.15.66-.54.82-1.08.51l-3-2.21-1.45 1.39c-.16.16-.3.3-.61.3l.21-3.05 5.51-4.98c.24-.21-.05-.33-.37-.12L6.37 14.17l-2.95-.92c-.64-.2-.65-.64.14-.95l11.52-4.44c.53-.19 1 .13.48.31z"/></svg>
+      Telegram
+    </a>
+    <a href="https://www.youtube.com/@EzequielSack/" target="_blank" class="btn-yt">
+      <svg viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.75 15.5v-7l6.25 3.5-6.25 3.5z"/></svg>
+      YouTube
+    </a>
+    <a href="{{ referral }}" target="_blank" class="btn-cta">Registro →</a>
+  </div>
+</nav>
+
+<!-- EXP BANNER -->
+<div class="exp-banner">⚗️ <strong>EXPERIMENTAL</strong> · Educativo · Por <strong>Ezequiel Sack</strong> · No es asesoramiento financiero</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="badge-live"><div class="live-dot"></div>Estrategia validada · 1 año de datos reales · BTC/USDT</div>
+  <h1>Tu dinero trabajando<br>mientras vos <em>dormís</em></h1>
+  <p class="hero-sub">Experimento real de trading algorítmico por <strong>Ezequiel Sack</strong>. Opera Bitcoin en Bybit automáticamente — vos solo mirás.</p>
+  <div class="hero-btns">
+    <a href="{{ referral }}" target="_blank" class="btn-primary">🚀 Paso 1 · Crear cuenta en Bybit →</a>
+    <a href="/descargar" class="btn-ghost">⬇ Paso 2 · Descargar AUTOBOT</a>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-n gold" data-count="699" data-suffix="%">+0%</div><div class="stat-l">Retorno 1 año<br>(backtest real)</div></div>
+    <div class="stat"><div class="stat-n" data-count="2.83" data-prefix="$">$0</div><div class="stat-l">Gana por<br>cada $1 perdido</div></div>
+    <div class="stat"><div class="stat-n" data-count="13" data-prefix="-" data-suffix="%">-0%</div><div class="stat-l">Peor caída<br>histórica</div></div>
+    <div class="stat"><div class="stat-n" data-count="103">0</div><div class="stat-l">Ops en<br>1 año (~8/mes)</div></div>
+  </div>
+</section>
+
+<!-- QUÉ INCLUYE -->
+<section id="incluye">
+  <div class="reveal">
+    <div class="sec-badge">Qué incluye</div>
+    <h2 class="sec-title">Todo lo que necesitás<br>para empezar hoy</h2>
+    <p class="sec-sub">Gratis. Sin suscripción. Solo creás tu cuenta en Bybit con el link y conectás AUTOBOT.</p>
+  </div>
+  <div class="inc-grid reveal">
+    <div class="inc-card"><div class="inc-ic">🤖</div><div><div class="inc-t">Bot automático 24/7</div><div class="inc-d">Opera BTC en Bybit con 6 indicadores. Entra, pone SL y TP, y sale solo.</div><div class="inc-badge">✓ INCLUIDO</div></div></div>
+    <div class="inc-card"><div class="inc-ic">📊</div><div><div class="inc-t">Dashboard en tiempo real</div><div class="inc-d">Saldo, posición abierta con PnL en vivo, historial y curva de capital.</div><div class="inc-badge">✓ INCLUIDO</div></div></div>
+    <div class="inc-card"><div class="inc-ic">📈</div><div><div class="inc-t">Gráfico BTC en vivo</div><div class="inc-d">TradingView embebido en el dashboard. Ves el gráfico de BTC con todos los indicadores.</div><div class="inc-badge">✓ INCLUIDO</div></div></div>
+    <div class="inc-card"><div class="inc-ic">🛡️</div><div><div class="inc-t">Gestión de riesgo automática</div><div class="inc-d">Circuit breaker, stop loss dinámico, control de drawdown. Se protege solo en rachas malas.</div><div class="inc-badge">✓ INCLUIDO</div></div></div>
+    <div class="inc-card"><div class="inc-ic">💬</div><div><div class="inc-t">Comunidad en Telegram</div><div class="inc-d">Canal exclusivo donde Ezequiel Sack comparte las señales en tiempo real y novedades del bot.</div><div class="inc-badge">✓ INCLUIDO</div></div></div>
+    <div class="inc-card"><div class="inc-ic">📺</div><div><div class="inc-t">Contenido educativo YouTube</div><div class="inc-d">Todo el proceso del bot explicado en el canal. Aprendés trading mientras usás la herramienta.</div><div class="inc-badge">✓ INCLUIDO</div></div></div>
+  </div>
+</section>
+
+<!-- CÓMO FUNCIONA -->
+<section id="como-funciona">
+  <div class="reveal">
+    <div class="sec-badge">Cómo funciona</div>
+    <h2 class="sec-title">Simple para vos.<br>Inteligente por dentro.</h2>
+    <p class="sec-sub">No necesitás saber trading. AUTOBOT analiza, decide y opera. Vos solo mirás.</p>
+  </div>
+  <div class="how-grid reveal">
+    <div class="how-card"><div class="how-n">Paso 01</div><span class="how-ic">🔍</span><div class="how-t">Analiza cada 5 minutos</div><div class="how-d">6 indicadores simultáneos. Si todos confirman, entra. Si uno duda, espera. Sin emoción.</div></div>
+    <div class="how-card"><div class="how-n">Paso 02</div><span class="how-ic">⚡</span><div class="how-t">Opera automático</div><div class="how-d">Entra y pone SL y TP solo. Ratio 1:3.5 — por cada $1 que arriesga busca $3.50.</div></div>
+    <div class="how-card"><div class="how-n">Paso 03</div><span class="how-ic">🛡️</span><div class="how-t">Se protege solo</div><div class="how-d">4 pérdidas seguidas → para 3 horas. 0.5% de riesgo por operación = máximo $1.50 con $300.</div></div>
+  </div>
+</section>
+
+<!-- CÓMO EMPEZAR -->
+<section id="empezar">
+  <div class="reveal">
+    <div class="sec-badge">Cómo empezar</div>
+    <h2 class="sec-title">De cero a operando<br>en 4 pasos</h2>
+    <p class="sec-sub">No necesitás instalar nada técnico. Descargás un archivo, lo abrís y pegás tus claves.</p>
+  </div>
+
+  <div class="steps-line reveal">
+    <div class="step-card">
+      <div class="step-num-big">1</div>
+      <div class="step-head">Creá tu cuenta en Bybit</div>
+      <div class="step-text">Registrate gratis con el link oficial. Tarda 2 minutos y desbloquea el bot.</div>
+      <a href="{{ referral }}" target="_blank" class="step-action">Crear cuenta →</a>
+    </div>
+    <div class="step-card">
+      <div class="step-num-big">2</div>
+      <div class="step-head">Descargá AUTOBOT</div>
+      <div class="step-text">Un solo archivo. Sin instalar Python ni nada técnico. Doble click y se abre.</div>
+      <a href="/descargar" class="step-action">Descargar →</a>
+    </div>
+    <div class="step-card">
+      <div class="step-num-big">3</div>
+      <div class="step-head">Abrí el archivo</div>
+      <div class="step-text">Windows puede mostrar un aviso de seguridad porque es una app nueva. Es normal.</div>
+      <span class="step-hint">ℹ️ Tocá "Más info" → "Ejecutar de todos modos"</span>
+    </div>
+    <div class="step-card">
+      <div class="step-num-big">4</div>
+      <div class="step-head">Conectá y listo</div>
+      <div class="step-text">Pegás tu API Key de Bybit, das "Iniciar" y el bot empieza a operar solo.</div>
+      <span class="step-hint">🤖 El bot trabaja 24/7 por vos</span>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTADOS -->
+<div class="res-wrap" id="resultados">
+  <div class="res-inner">
+    <div class="reveal"><div class="sec-badge">Resultados del experimento</div><h2 class="sec-title">1 año de datos reales.<br>Sin inventar nada.</h2><p class="sec-sub">Backtest con datos históricos de Bybit. Nov 2024 → May 2025.</p></div>
+    <div class="res-grid">
+      <div class="res-stack reveal">
+        <div class="res-card main"><div><div class="rl">Capital inicial → Capital final</div><div class="rv gold">$300 → $2.397</div><div class="rs">+699% · datos reales de Bybit · 1 año</div></div></div>
+        <div class="res-card">
+          <div><div class="rl">Profit Factor</div><div class="rv" style="font-size:28px">2.83</div><div class="rs">$2.83 por cada $1 perdido</div></div>
+          <div style="text-align:right"><div class="rl">Sharpe Ratio</div><div class="rv" style="font-size:28px">6.46</div><div class="rs">Calidad del retorno</div></div>
+        </div>
+        <div class="res-card">
+          <div><div class="rl">Máx. Drawdown</div><div class="rv red" style="font-size:28px">-13%</div><div class="rs">Peor caída histórica</div></div>
+          <div style="text-align:right"><div class="rl">Win Rate</div><div class="rv" style="font-size:28px">38%</div><div class="rs">Gana más de lo que pierde</div></div>
+        </div>
+        <div class="exp-note">⚗️ <strong>Esto es un experimento educativo</strong> de Ezequiel Sack. Resultados históricos no garantizan ganancias futuras. Operá solo con plata que podés perder.</div>
+      </div>
+      <div class="res-chart reveal">
+        <div class="chart-lbl">Curva de equity · $300 iniciales</div>
+        <svg class="chart-svg" viewBox="0 0 400 185" preserveAspectRatio="none">
+          <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c9844a" stop-opacity="0.35"/><stop offset="100%" stop-color="#c9844a" stop-opacity="0"/></linearGradient></defs>
+          <path id="chart-area" d="M0,175 L20,170 L40,165 L60,168 L80,160 L100,150 L115,155 L130,140 L150,125 L170,120 L185,130 L200,105 L220,90 L240,75 L255,85 L270,65 L290,47 L310,37 L330,28 L350,18 L375,12 L400,8 L400,185 L0,185Z" fill="url(#cg)"/>
+          <path id="chart-line" d="M0,175 L20,170 L40,165 L60,168 L80,160 L100,150 L115,155 L130,140 L150,125 L170,120 L185,130 L200,105 L220,90 L240,75 L255,85 L270,65 L290,47 L310,37 L330,28 L350,18 L375,12 L400,8" fill="none" stroke="#c9844a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="0" y1="175" x2="400" y2="175" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="6,4"/>
+          <text x="4" y="184" fill="rgba(255,255,255,0.25)" font-size="9" font-family="Inter">$300</text>
+          <text id="chart-label" x="330" y="7" fill="#c9844a" font-size="10" font-family="Inter" font-weight="700">$2.397</text>
+          <circle id="chart-dot" cx="400" cy="8" r="4" fill="#c9844a"/>
+        </svg>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-top:6px"><span>Nov 2024</span><span>May 2025</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="reveal">
+    <div class="sec-badge">FAQ</div>
+    <h2 class="sec-title">Preguntas<br>frecuentes</h2>
+  </div>
+  <div class="faq-list">
+    <div class="faq-item reveal"><button class="faq-q">¿Ezequiel Sack tiene acceso a mi dinero?<span class="faq-icon">+</span></button><div class="faq-a"><strong>Absolutamente no.</strong> Ezequiel Sack NO TIENE ACCESO A DINERO ALGUNO DE LOS USUARIOS y no maneja fondos de ningún usuario en ninguna circunstancia. No tiene acceso a tus API Keys, ni a tu cuenta de Bybit, ni a ningún centavo tuyo. El bot corre en tu propia computadora. Tu dinero nunca sale de Bybit. La conexión es directa entre vos y tu exchange — sin intermediarios.</div></div>
+    <div class="faq-item reveal"><button class="faq-q">¿Es seguro? ¿Me pueden robar?<span class="faq-icon">+</span></button><div class="faq-a">La API Key tiene <strong>solo permiso para operar</strong> — no puede retirar plata ni transferir nada. Si alguien la obtuviera, lo peor es que vean tu saldo. No pueden sacar un centavo. Bybit lo garantiza a nivel de plataforma. Nunca des permisos de Withdrawal.</div></div>
+    <div class="faq-item reveal"><button class="faq-q">¿Cuánto necesito para empezar?<span class="faq-icon">+</span></button><div class="faq-a">No hay un mínimo obligatorio — cada persona decide el capital que quiere usar. El backtest fue hecho con <strong>$300 USDT</strong> como referencia. Con menos capital las comisiones de Bybit pesan más en el resultado, pero la decisión es completamente tuya. <strong>Cada usuario es responsable del capital que elige invertir.</strong></div></div>
+    <div class="faq-item reveal"><button class="faq-q">¿Puedo perder todo?<span class="faq-icon">+</span></button><div class="faq-a">El bot arriesga máximo el <strong>0.5% por operación</strong>. Con $300 son $1.50 por trade. Tiene circuit breaker: 4 pérdidas seguidas → para 3 horas. El drawdown máximo histórico fue -13%. <strong>Este es un experimento, no una garantía.</strong></div></div>
+  </div>
+</section>
+
+
+<!-- CTA FINAL -->
+<section class="cta-wrap">
+  <div class="reveal">
+    <h2>Empezá hoy.<br>Es <em>gratis</em>.</h2>
+    <p>Creá tu cuenta en Bybit, cargá USDT y conectá AUTOBOT en minutos.</p>
+    <div class="cta-btns">
+      <a href="{{ referral }}" target="_blank" class="btn-primary" style="font-size:16px;padding:18px 44px">🚀 Crear cuenta en Bybit →</a>
+      <a href="/descargar" class="btn-ghost" style="font-size:16px;padding:18px 32px">⬇ Descargar AUTOBOT</a>
+    </div>
+    <div class="cta-note">Proyecto experimental y educativo por Ezequiel Sack.<br>No es asesoramiento financiero. Solo operá con lo que podés perder.</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div><div class="footer-logo">AUTO<span>BOT</span></div><div class="footer-by">Por <a href="https://www.youtube.com/@EzequielSack/" target="_blank">Ezequiel Sack</a> · Proyecto educativo</div></div>
+  <div class="footer-exp">⚗️ EXPERIMENTAL</div>
+  <div class="footer-links">
+    <a href="https://www.youtube.com/@EzequielSack/" target="_blank">YouTube</a>
+    <a href="https://t.me/EzequielSackTelegram" target="_blank">Telegram</a>
+    <a href="{{ referral }}" target="_blank">Bybit</a>
+  </div>
+</footer>
+
+<script>
+// Contadores
+function animateCounter(el){
+  const target=parseFloat(el.dataset.count),prefix=el.dataset.prefix||'',suffix=el.dataset.suffix||'';
+  const isFloat=target!==Math.floor(target),dur=2200,start=performance.now();
+  function up(now){const p=Math.min((now-start)/dur,1),e=1-Math.pow(1-p,4),v=target*e;
+    el.textContent=prefix+(isFloat?v.toFixed(2):Math.floor(v))+suffix;
+    if(p<1)requestAnimationFrame(up);else el.textContent=prefix+(isFloat?target.toFixed(2):target)+suffix;}
+  requestAnimationFrame(up);
+}
+const io=new IntersectionObserver(entries=>{entries.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add('visible');e.target.querySelectorAll('[data-count]').forEach(animateCounter);io.unobserve(e.target);})},{threshold:.12});
+document.querySelectorAll('.reveal,.stats-bar').forEach(el=>io.observe(el));
+
+// Animar el gráfico de equity al entrar en pantalla
+const chartObs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add('chart-animate');chartObs.unobserve(e.target);})},{threshold:.4});
+const chartSvg=document.querySelector('.chart-svg');if(chartSvg)chartObs.observe(chartSvg);
+
+// FAQ
+document.querySelectorAll('.faq-q').forEach(btn=>{btn.addEventListener('click',()=>{const item=btn.parentElement,was=item.classList.contains('open');document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));if(!was)item.classList.add('open');});});
+
+// BTC precio
+async function fetchBTC(){try{const r=await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT'),d=await r.json();const p=parseFloat(d.result.list[0].lastPrice),c=parseFloat(d.result.list[0].price24hPcnt)*100,s=c>=0?'+':'';document.getElementById('btc-price').textContent=`BTC $${p.toLocaleString('es')} (${s}${c.toFixed(2)}%)`;}catch{}}
+fetchBTC();setInterval(fetchBTC,30000);
+
+// Email
+function handleEmail(e){e.preventDefault();const note=document.getElementById('email-note');note.textContent='✅ Te avisamos cuando el bot opere. ¡Gracias!';note.style.color='#c9844a';}
+</script>
+</body>
+</html>

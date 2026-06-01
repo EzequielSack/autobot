@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AUTOBOT Dashboard — Ezequiel Sack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#09090f;
+  --card:rgba(255,255,255,0.035);
+  --bord:rgba(255,255,255,0.08);
+  --bord-gold:rgba(201,132,74,0.2);
+  --gold:#c9844a;
+  --gold2:#e8a862;
+  --text:#f4f0e8;
+  --mut:rgba(244,240,232,0.38);
+  --mut2:rgba(244,240,232,0.55);
+  --green:#4caf7d;
+  --red:#e05555;
+}
+
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
+
+/* ── NAV ─────────────────────────────────────────────────── */
+nav{
+  height:52px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;flex-shrink:0;
+  border-bottom:1px solid var(--bord);
+  background:rgba(9,9,15,0.95);backdrop-filter:blur(20px);
+}
+.nav-logo{font-size:17px;font-weight:900;letter-spacing:-.5px;text-decoration:none;color:var(--text)}
+.nav-logo em{color:var(--gold);font-style:normal}
+.nav-center{display:flex;align-items:center;gap:6px}
+.nav-tag{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:3px 10px;border-radius:100px;border:1px solid}
+.nav-tag.by{color:var(--mut);border-color:var(--bord);background:none}
+.nav-tag.exp{color:var(--gold);border-color:var(--bord-gold);background:rgba(201,132,74,0.06)}
+.nav-right{display:flex;align-items:center;gap:8px}
+.pill{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:5px 12px;border-radius:100px;border:1px solid;transition:all .2s;text-decoration:none}
+.pill.status-off{color:var(--mut);border-color:var(--bord)}
+.pill.status-on {color:var(--gold);border-color:var(--bord-gold);background:rgba(201,132,74,0.06)}
+.sdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.sdot.on{background:var(--gold);animation:blink 2s ease infinite}
+.sdot.off{background:rgba(255,255,255,0.2)}
+.nav-link{font-size:12px;font-weight:500;color:var(--mut);text-decoration:none;padding:5px 10px;border-radius:6px;transition:color .2s}
+.nav-link:hover{color:var(--text)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── MAIN ─────────────────────────────────────────────────── */
+.main{flex:1;overflow:hidden;display:flex}
+
+/* ── LOGIN ─────────────────────────────────────────────────── */
+#login-panel{
+  width:100%;display:flex;align-items:center;justify-content:center;
+  padding:40px 24px;overflow-y:auto;
+}
+.login-wrap{
+  width:100%;max-width:420px;
+  animation:fadeUp .4s ease both;
+}
+.login-logo{
+  text-align:center;margin-bottom:36px;
+}
+.login-logo-mark{
+  font-size:32px;font-weight:900;letter-spacing:-1.5px;color:var(--text);
+  margin-bottom:6px;
+}
+.login-logo-mark em{color:var(--gold);font-style:normal}
+.login-logo-sub{font-size:13px;color:var(--mut);font-weight:400}
+
+/* Formulario */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--mut);letter-spacing:.5px;margin-bottom:7px}
+.field input{
+  width:100%;background:rgba(255,255,255,0.04);
+  border:1px solid var(--bord);border-radius:10px;
+  color:var(--text);font-size:14px;font-family:inherit;
+  padding:13px 14px;outline:none;transition:border-color .2s;
+}
+.field input:focus{border-color:rgba(201,132,74,0.4);background:rgba(201,132,74,0.03)}
+.field input::placeholder{color:rgba(255,255,255,0.18)}
+
+.check-row{display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.check-row input{width:15px;height:15px;cursor:pointer;accent-color:var(--gold);flex-shrink:0}
+.check-row label{font-size:12px;color:var(--mut);cursor:pointer}
+
+.btn-connect{
+  width:100%;background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#09090f;font-weight:800;font-size:14px;
+  padding:14px;border:none;border-radius:10px;
+  cursor:pointer;font-family:inherit;transition:all .2s;
+  box-shadow:0 4px 20px rgba(201,132,74,0.25);
+}
+.btn-connect:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(201,132,74,0.4)}
+.btn-connect:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+.err{display:none;margin-bottom:14px;padding:11px 14px;background:rgba(224,85,85,0.07);border:1px solid rgba(224,85,85,0.2);border-radius:8px;font-size:12px;color:#e07070}
+
+/* Info row debajo del botón */
+.info-row{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:16px;flex-wrap:wrap}
+.info-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--mut);cursor:default;position:relative}
+.info-i{width:14px;height:14px;border-radius:50%;border:1px solid var(--mut);display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0;color:var(--mut)}
+.info-item:hover .tooltip{opacity:1;pointer-events:auto;transform:translateY(0)}
+.tooltip{
+  position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px);
+  background:#1a1a28;border:1px solid rgba(255,255,255,0.1);border-radius:8px;
+  padding:9px 12px;font-size:11px;color:var(--mut2);line-height:1.5;
+  white-space:nowrap;max-width:240px;white-space:normal;width:200px;
+  opacity:0;pointer-events:none;transition:all .2s;z-index:100;text-align:left;
+}
+.tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#1a1a28}
+
+/* Separador */
+.sep{display:flex;align-items:center;gap:12px;margin:22px 0}
+.sep-line{flex:1;height:1px;background:var(--bord)}
+.sep-txt{font-size:11px;color:var(--mut);white-space:nowrap}
+
+/* Botones comunidad */
+.community-btns{display:flex;gap:8px}
+.c-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:9px;border:1px solid var(--bord);font-size:12px;font-weight:600;text-decoration:none;transition:all .2s;background:rgba(255,255,255,0.02)}
+.c-btn.tg{color:#5bc8f5;border-color:rgba(34,158,217,0.18)}
+.c-btn.tg:hover{background:rgba(34,158,217,0.08);border-color:rgba(34,158,217,0.35)}
+.c-btn.yt{color:#ff7070;border-color:rgba(255,60,60,0.18)}
+.c-btn.yt:hover{background:rgba(255,0,0,0.08);border-color:rgba(255,60,60,0.35)}
+.c-btn svg{width:14px;height:14px;fill:currentColor;flex-shrink:0}
+
+/* Registro bybit */
+.bybit-row{margin-top:10px;text-align:center;font-size:12px;color:var(--mut)}
+.bybit-row a{color:var(--gold);text-decoration:none;font-weight:600}
+.bybit-row a:hover{text-decoration:underline}
+
+/* Spinner */
+.spinner{width:16px;height:16px;border:2px solid rgba(0,0,0,0.2);border-top-color:#09090f;border-radius:50%;animation:spin .6s linear infinite;display:none;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Acordeón guía API */
+.guide-toggle{
+  width:100%;background:none;border:1px solid var(--bord);border-radius:10px;
+  color:var(--mut);font-size:12px;font-weight:600;padding:11px 16px;
+  text-align:left;cursor:pointer;font-family:inherit;transition:all .2s;
+  display:flex;align-items:center;justify-content:space-between;margin-top:12px;
+}
+.guide-toggle:hover{border-color:rgba(201,132,74,0.25);color:var(--text)}
+.guide-toggle-icon{transition:transform .25s;font-size:10px}
+.guide-toggle.open .guide-toggle-icon{transform:rotate(180deg)}
+.guide-content{display:none;margin-top:8px;background:rgba(255,255,255,0.02);border:1px solid var(--bord);border-radius:10px;overflow:hidden}
+.guide-content.open{display:block}
+.guide-step{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.04)}
+.guide-step:last-child{border-bottom:none}
+.step-n{width:20px;height:20px;border-radius:50%;background:rgba(201,132,74,0.12);border:1px solid var(--bord-gold);color:var(--gold);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-body{}
+.step-t{font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px}
+.step-d{font-size:11px;color:var(--mut);line-height:1.6}
+.step-code{display:inline-block;margin-top:5px;font-size:10px;font-family:monospace;color:var(--gold);background:rgba(201,132,74,0.08);border:1px solid rgba(201,132,74,0.15);border-radius:5px;padding:2px 8px}
+.step-warn{font-size:11px;color:#e07070;margin-top:4px;display:flex;align-items:flex-start;gap:5px}
+
+/* ── DASHBOARD ─────────────────────────────────────────────── */
+#dash-panel{display:none;width:100%;overflow-y:auto;padding:20px 24px}
+
+/* KPIs */
+.kpi-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--bord);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi:hover{border-color:rgba(255,255,255,0.12)}
+.kpi.main{background:linear-gradient(135deg,rgba(201,132,74,0.07),rgba(201,132,74,0.01));border-color:var(--bord-gold)}
+.kpi.main::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,132,74,0.5),transparent)}
+.kl{font-size:9px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px}
+.kv{font-size:32px;font-weight:900;letter-spacing:-1.5px;line-height:1;color:var(--text)}
+.kv.gold{color:var(--gold)} .kv.green{color:var(--green)} .kv.red{color:var(--red)}
+.kv.sm{font-size:22px;letter-spacing:-.8px}
+.ks{font-size:10px;color:var(--mut);margin-top:6px}
+
+/* Grid 2 cols */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.g1{margin-bottom:12px}
+
+/* Card */
+.card{background:var(--card);border:1px solid var(--bord);border-radius:14px;padding:18px 20px}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-title{font-size:10px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:1.5px}
+
+/* Posición */
+.pos-row{display:flex;align-items:center;justify-content:space-between}
+.pos-left{}
+.pos-side{font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.pos-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pos-meta{font-size:11px;color:var(--mut)}
+.pos-right{text-align:right}
+.pos-pnl-lbl{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.pos-pnl-val{font-size:24px;font-weight:900;letter-spacing:-.8px}
+.empty{text-align:center;padding:28px;font-size:13px;color:rgba(255,255,255,0.15);line-height:2}
+
+/* Trades */
+.trade{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.trade:last-child{border-bottom:none}
+.trade-ic{font-size:17px;flex-shrink:0}
+.trade-info{flex:1}
+.trade-side{font-size:12px;font-weight:700;color:var(--text)}
+.trade-date{font-size:10px;color:var(--mut);margin-top:1px}
+.trade-ep{font-size:11px;color:var(--mut)}
+.trade-res{font-size:10px;font-weight:700;padding:3px 10px;border-radius:100px}
+.res-w{background:rgba(76,175,125,0.1);color:var(--green)}
+.res-l{background:rgba(224,85,85,0.1);color:var(--red)}
+.res-o{background:rgba(201,132,74,0.1);color:var(--gold)}
+
+/* Botones small */
+.btn-xs{background:none;border:1px solid var(--bord);border-radius:7px;color:var(--mut);font-size:10px;font-weight:600;padding:5px 10px;cursor:pointer;font-family:inherit;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.btn-xs:hover{border-color:rgba(255,255,255,0.18);color:var(--text)}
+.btn-xs svg{width:11px;height:11px;fill:currentColor}
+.btn-xs.tg{color:#5bc8f5;border-color:rgba(34,158,217,0.2)}
+.btn-xs.yt{color:#ff7070;border-color:rgba(255,60,60,0.2)}
+
+/* Gráfico TV */
+.tv-wrap{height:420px;border-radius:0 0 14px 14px;overflow:hidden}
+
+/* Footer dash */
+.dash-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding:8px 0;flex-wrap:wrap;gap:8px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:768px){
+  .kpi-grid,.g2{grid-template-columns:1fr 1fr}
+  nav{padding:0 14px}
+  #dash-panel{padding:14px}
+  .login-wrap{max-width:100%}
+  .community-btns{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">AUTO<em>BOT</em></a>
+  <div class="nav-center">
+    <span class="nav-tag by">by Ezequiel Sack</span>
+    <span class="nav-tag exp">⚗ Experimental</span>
+  </div>
+  <div class="nav-right">
+    <div class="pill status-off" id="status-pill">
+      <div class="sdot off" id="sdot"></div>
+      <span id="status-txt">Desconectado</span>
+    </div>
+    <a href="/" class="nav-link">← Inicio</a>
+  </div>
+</nav>
+
+<div class="main">
+
+<!-- ── LOGIN ─────────────────────────────────────────────── -->
+<div id="login-panel">
+  <div class="login-wrap">
+
+    <div class="login-logo">
+      <div class="login-logo-mark">AUTO<em>BOT</em></div>
+      <div class="login-logo-sub" id="login-sub">Activá el bot en 2 pasos</div>
+    </div>
+
+    <!-- ── PASO 1: GATE DE REGISTRO ─────────────────────── -->
+    <div id="gate-step">
+      <div class="field" style="margin-bottom:18px">
+        <label style="display:flex;align-items:center;gap:6px"><span class="step-n" style="width:18px;height:18px;font-size:9px">1</span> CREÁ TU CUENTA EN BYBIT</label>
+        <div style="font-size:12px;color:var(--mut);line-height:1.6;margin-bottom:14px">
+          Para usar AUTOBOT necesitás una cuenta en Bybit creada con el link oficial de Ezequiel Sack. Es gratis y desbloquea el acceso al bot.
+        </div>
+        <a href="{{ referral }}" target="_blank" id="ref-link" onclick="marcarRegistro()" class="btn-connect" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none">
+          🚀 Crear mi cuenta en Bybit →
+        </a>
+      </div>
+
+      <div class="check-row" id="confirm-row" style="opacity:0.4;pointer-events:none;transition:opacity .3s">
+        <input type="checkbox" id="confirm-reg" onchange="checkGate()">
+        <label for="confirm-reg">Ya creé mi cuenta en Bybit con el link de arriba</label>
+      </div>
+
+      <button class="btn-connect" id="btn-continue" onclick="abrirForm()" disabled style="opacity:.4;cursor:not-allowed">
+        Continuar al paso 2 →
+      </button>
+
+      <div style="text-align:center;font-size:11px;color:var(--mut);margin-top:12px">
+        Al registrarte con el link apoyás el canal de Ezequiel Sack — sin costo extra para vos.
+      </div>
+    </div>
+
+    <!-- ── PASO 2: FORMULARIO API (oculto al inicio) ──────── -->
+    <div id="api-step" style="display:none">
+
+    <div style="font-size:12px;color:var(--mut);margin-bottom:16px;display:flex;align-items:center;gap:6px">
+      <span class="step-n" style="width:18px;height:18px;font-size:9px">2</span> CONECTÁ TU CUENTA
+    </div>
+
+    <div class="err" id="err"></div>
+
+    <div class="field">
+      <label>API KEY</label>
+      <input type="password" id="api-key" placeholder="Pegá tu API Key">
+    </div>
+    <div class="field">
+      <label>API SECRET</label>
+      <input type="password" id="api-secret" placeholder="Pegá tu API Secret">
+    </div>
+    <div class="check-row">
+      <input type="checkbox" id="testnet">
+      <label for="testnet">Cuenta de prueba (Testnet)</label>
+    </div>
+
+    <button class="btn-connect" id="btn-c" onclick="conectar()">
+      <span id="btn-txt">Conectar →</span>
+      <div class="spinner" id="spin"></div>
+    </button>
+
+    <!-- Info items con tooltips -->
+    <div class="info-row">
+      <div class="info-item">
+        <span class="info-i">i</span> Sin acceso a tu dinero
+        <div class="tooltip">Ezequiel Sack no tiene acceso a tus fondos. Tu dinero nunca sale de Bybit. Jamás.</div>
+      </div>
+      <div class="info-item">
+        <span class="info-i">i</span> Claves locales
+        <div class="tooltip">Tus API Keys se usan solo en tu sesión local. No se guardan en ningún servidor de terceros.</div>
+      </div>
+      <div class="info-item">
+        <span class="info-i">i</span> Solo trading
+        <div class="tooltip">Las claves tienen permiso únicamente para operar. Sin permisos de retiro = sin riesgo de robo.</div>
+      </div>
+    </div>
+
+    </div><!-- /api-step -->
+
+    <div class="sep" style="margin:18px 0 10px"><div class="sep-line"></div><div class="sep-txt">Comunidad</div><div class="sep-line"></div></div>
+    <div class="community-btns">
+      <a href="https://t.me/EzequielSackTelegram" target="_blank" class="c-btn tg">
+        <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.17-1.97 9.28c-.15.66-.54.82-1.08.51l-3-2.21-1.45 1.39c-.16.16-.3.3-.61.3l.21-3.05 5.51-4.98c.24-.21-.05-.33-.37-.12L6.37 14.17l-2.95-.92c-.64-.2-.65-.64.14-.95l11.52-4.44c.53-.19 1 .13.48.31z"/></svg>
+        Telegram de Ezequiel Sack
+      </a>
+      <a href="https://www.youtube.com/@EzequielSack/" target="_blank" class="c-btn yt">
+        <svg viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.75 15.5v-7l6.25 3.5-6.25 3.5z"/></svg>
+        YouTube · 56.6K subs
+      </a>
+    </div>
+
+    <!-- Guía API (acordeón) -->
+    <button class="guide-toggle" id="guide-btn" onclick="toggleGuide()">
+      <span>¿Cómo creo mis API Keys en Bybit?</span>
+      <span class="guide-toggle-icon" id="guide-icon">▼</span>
+    </button>
+    <div class="guide-content" id="guide-content">
+      <div class="guide-step">
+        <div class="step-n">1</div>
+        <div class="step-body"><div class="step-t">Entrá a bybit.com</div><div class="step-d">Tu avatar (arriba a la derecha) → <strong>API Management</strong></div><div class="step-code">Perfil → API Management</div></div>
+      </div>
+      <div class="guide-step">
+        <div class="step-n">2</div>
+        <div class="step-body"><div class="step-t">Create New Key</div><div class="step-d">Elegí <strong>System-generated API Keys</strong>. Nombre: <em>AUTOBOT</em></div></div>
+      </div>
+      <div class="guide-step">
+        <div class="step-n">3</div>
+        <div class="step-body"><div class="step-t">Permisos — solo esto:</div><div class="step-code">✅ Unified Trading → Read + Write</div><div class="step-warn">🚫 NO actives Withdrawal ni Transfer</div></div>
+      </div>
+      <div class="guide-step">
+        <div class="step-n">4</div>
+        <div class="step-body"><div class="step-t">Confirmá con 2FA</div><div class="step-d">Bybit te muestra la Key y el Secret <strong>una sola vez</strong>. Copialos y pegálos arriba.</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── DASHBOARD ──────────────────────────────────────────── -->
+<div id="dash-panel">
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi main">
+      <div class="kl">Saldo total</div>
+      <div class="kv gold" id="kv-equity">—</div>
+      <div class="ks" id="ks-disp">Disponible: —</div>
+    </div>
+    <div class="kpi">
+      <div class="kl">PnL abierto</div>
+      <div class="kv sm" id="kv-pnl">—</div>
+      <div class="ks">Tiempo real</div>
+    </div>
+    <div class="kpi">
+      <div class="kl">Win Rate</div>
+      <div class="kv sm" id="kv-wr">—</div>
+      <div class="ks" id="ks-ops">— operaciones</div>
+    </div>
+    <div class="kpi">
+      <div class="kl">Ganadas / Perdidas</div>
+      <div class="kv sm" id="kv-gp">—</div>
+      <div class="ks">Historial</div>
+    </div>
+  </div>
+
+  <!-- Posición + Equity -->
+  <div class="g2">
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-title">Operación abierta</div>
+        <button class="btn-xs" onclick="cargarDatos()">↻</button>
+      </div>
+      <div id="pos-content"><div class="empty">😴<br>Sin operación abierta<br><span style="font-size:11px">Esperando señal</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-title">Capital</div>
+        <div style="font-size:11px;color:var(--gold);font-weight:700" id="eq-badge">—</div>
+      </div>
+      <div id="equity-chart" style="height:160px"></div>
+    </div>
+  </div>
+
+  <!-- Gráfico TradingView -->
+  <div class="card g1" style="padding:0;overflow:hidden">
+    <div class="card-hd" style="padding:16px 18px 0">
+      <div class="card-title">Gráfico BTC/USDT · 5 min · TradingView</div>
+      <a href="https://www.bybit.com/trade/usdt/BTCUSDT" target="_blank" class="btn-xs">
+        Abrir en Bybit
+        <svg viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.41L10.41 15 9 13.59 17.59 5H14V3zM5 5h6V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6h-2v6H5V5z"/></svg>
+      </a>
+    </div>
+    <div style="height:420px;margin-top:12px" id="tv-container">
+      <div id="tradingview_btc" style="height:100%;width:100%"></div>
+    </div>
+  </div>
+
+  <!-- Trades -->
+  <div class="card g1">
+    <div class="card-hd">
+      <div class="card-title">Últimas operaciones</div>
+      <div style="font-size:10px;color:var(--mut);font-weight:600" id="trades-badge">—</div>
+    </div>
+    <div id="trades-content"><div class="empty">Sin operaciones registradas todavía</div></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="dash-footer">
+    <div style="display:flex;gap:8px">
+      <a href="https://t.me/EzequielSackTelegram" target="_blank" class="btn-xs tg">
+        <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.17-1.97 9.28c-.15.66-.54.82-1.08.51l-3-2.21-1.45 1.39c-.16.16-.3.3-.61.3l.21-3.05 5.51-4.98c.24-.21-.05-.33-.37-.12L6.37 14.17l-2.95-.92c-.64-.2-.65-.64.14-.95l11.52-4.44c.53-.19 1 .13.48.31z"/></svg>
+        Telegram
+      </a>
+      <a href="https://www.youtube.com/@EzequielSack/" target="_blank" class="btn-xs yt">
+        <svg viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.75 15.5v-7l6.25 3.5-6.25 3.5z"/></svg>
+        YouTube
+      </a>
+    </div>
+    <button class="btn-xs" onclick="desconectar()">🔌 Desconectar</button>
+  </div>
+
+</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+
+// ── GUÍA ─────────────────────────────────────────────────
+function toggleGuide(){
+  const btn=$('guide-btn'),content=$('guide-content');
+  btn.classList.toggle('open');
+  content.classList.toggle('open');
+}
+
+// ── GATE DE REGISTRO ──────────────────────────────────────
+// Cuando hacen click en el link de Bybit, habilitamos el checkbox de confirmación
+function marcarRegistro(){
+  const row=$('confirm-row');
+  row.style.opacity='1';
+  row.style.pointerEvents='auto';
+  try{localStorage.setItem('autobot_ref_clicked','1')}catch{}
+}
+// Al tildar el checkbox, habilitamos el botón continuar
+function checkGate(){
+  const ok=$('confirm-reg').checked,btn=$('btn-continue');
+  btn.disabled=!ok;
+  btn.style.opacity=ok?'1':'.4';
+  btn.style.cursor=ok?'pointer':'not-allowed';
+}
+// Pasar al formulario de API
+function abrirForm(){
+  if(!$('confirm-reg').checked)return;
+  $('gate-step').style.display='none';
+  $('api-step').style.display='block';
+  $('login-sub').textContent='Paso 2 — Conectá tu cuenta de Bybit';
+}
+// Si ya clickeó el link antes, recordamos el estado al recargar
+try{if(localStorage.getItem('autobot_ref_clicked')==='1'){
+  document.addEventListener('DOMContentLoaded',()=>{
+    const row=$('confirm-row');if(row){row.style.opacity='1';row.style.pointerEvents='auto'}
+  });
+}}catch{}
+
+// ── CONECTAR ─────────────────────────────────────────────
+async function conectar(){
+  const key=$('api-key').value.trim(),secret=$('api-secret').value.trim(),testnet=$('testnet').checked;
+  if(!key||!secret){showErr('Completá los dos campos.');return}
+  $('btn-txt').style.display='none';$('spin').style.display='block';
+  $('btn-c').disabled=true;$('err').style.display='none';
+  try{
+    const res=await fetch('/api/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:key,api_secret:secret,testnet})});
+    const d=await res.json();
+    if(d.ok){showDash(d.wallet)}else{showErr(d.error||'Error de conexión')}
+  }catch{showErr('Error de red.')}
+  finally{$('btn-txt').style.display='block';$('spin').style.display='none';$('btn-c').disabled=false}
+}
+function showErr(msg){const e=$('err');e.textContent='⚠ '+msg;e.style.display='block'}
+
+// ── MOSTRAR DASH ──────────────────────────────────────────
+function showDash(wallet){
+  $('login-panel').style.display='none';
+  $('dash-panel').style.display='block';
+  const pill=$('status-pill');pill.className='pill status-on';
+  $('sdot').className='sdot on';$('status-txt').textContent='ACTIVO';
+  updateWallet(wallet);
+  cargarDatos();
+  initTV();
+  setInterval(()=>{fetchWallet();cargarDatos()},30000);
+}
+
+// ── WALLET ────────────────────────────────────────────────
+async function fetchWallet(){try{const r=await fetch('/api/wallet'),d=await r.json();if(d.ok)updateWallet(d.wallet)}catch{}}
+function updateWallet(w){
+  $('kv-equity').textContent='$'+w.equity.toLocaleString('es',{minimumFractionDigits:2});
+  $('ks-disp').textContent='Disponible: $'+w.disponible.toLocaleString('es',{minimumFractionDigits:2});
+  const pnl=w.pnl_abierto,el=$('kv-pnl');
+  el.textContent=(pnl>=0?'+':'')+'$'+pnl.toFixed(4);
+  el.className='kv sm '+(pnl>=0?'green':'red');
+}
+
+// ── DATOS ─────────────────────────────────────────────────
+async function cargarDatos(){
+  try{
+    const[pr,tr]=await Promise.all([fetch('/api/posiciones'),fetch('/api/trades')]);
+    const pd=await pr.json(),td=await tr.json();
+    renderPos(pd.posiciones||[]);
+    renderTrades(td.trades||[],td.stats||{});
+  }catch{}
+}
+
+function renderPos(pos){
+  const el=$('pos-content');
+  if(!pos.length){el.innerHTML='<div class="empty">😴<br>Sin operación abierta<br><span style="font-size:11px">Esperando señal</span></div>';return}
+  el.innerHTML=pos.map(p=>{
+    const long=p.side==='Buy';
+    const pnl=p.pnl||0,pc=pnl>=0?'var(--green)':'var(--red)',ps=pnl>=0?'+':'';
+    const dc=long?'var(--green)':'var(--red)';
+    return`<div class="pos-row"><div class="pos-left"><div class="pos-side"><div class="pos-dot" style="background:${dc}"></div>${long?'🟢 Compró BTC':'🔴 Vendió BTC'}</div><div class="pos-meta">Entrada: <strong style="color:var(--mut2)">$${parseFloat(p.avgPrice).toLocaleString('es')}</strong> · SL: ${p.stopLoss} · TP: ${p.takeProfit}</div></div><div class="pos-right"><div class="pos-pnl-lbl">P&L ahora</div><div class="pos-pnl-val" style="color:${pc}">${ps}$${pnl.toFixed(4)}</div></div></div>`
+  }).join('');
+}
+
+function renderTrades(trades,stats){
+  $('kv-wr').textContent=(stats.win_rate||0)+'%';
+  $('ks-ops').textContent=(stats.total||0)+' operaciones';
+  $('kv-gp').innerHTML=`<span style="color:var(--green)">${stats.wins||0}</span> / <span style="color:var(--red)">${stats.losses||0}</span>`;
+  $('trades-badge').textContent=trades.length+' registradas';
+
+  // Equity chart
+  const eq=stats.equity||[300],last=eq[eq.length-1]||300;
+  const col=last>=300?'#c9844a':'#e05555';
+  $('eq-badge').textContent='$'+last.toLocaleString('es',{minimumFractionDigits:2});
+  Plotly.newPlot($('equity-chart'),[{y:eq,type:'scatter',mode:'lines',line:{color:col,width:2,shape:'spline'},fill:'tozeroy',fillcolor:last>=300?'rgba(201,132,74,0.07)':'rgba(224,85,85,0.06)'}],
+  {paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',margin:{l:44,r:6,t:6,b:6},showlegend:false,font:{family:'Inter',color:'rgba(255,255,255,0.2)',size:10},xaxis:{showgrid:false,showticklabels:false,showline:false,zeroline:false},yaxis:{showgrid:true,gridcolor:'rgba(255,255,255,0.04)',tickprefix:'$',zeroline:false,tickfont:{size:9}},shapes:[{type:'line',x0:0,x1:eq.length,y0:300,y1:300,line:{color:'rgba(255,255,255,0.07)',width:1,dash:'dot'}}]},{displayModeBar:false,responsive:true});
+
+  // Trades list
+  const el=$('trades-content');
+  if(!trades.length){el.innerHTML='<div class="empty">Sin operaciones registradas todavía</div>';return}
+  el.innerHTML=[...trades].reverse().map(t=>{
+    const res=(t.resultado||'').toUpperCase();
+    const[ic,rc,rl]=res==='WIN'?['✅','res-w','Ganó']:res==='LOSS'?['❌','res-l','Perdió']:['⏳','res-o','Abierta'];
+    return`<div class="trade"><div class="trade-ic">${ic}</div><div class="trade-info"><div class="trade-side">${t.side==='Buy'?'Compró BTC':'Vendió BTC'}</div><div class="trade-date">${(t.timestamp||'').toString().slice(0,16).replace('T',' ')}</div></div><div class="trade-ep">$${parseFloat(t.entry_price||0).toLocaleString('es')}</div><span class="trade-res ${rc}">${rl}</span></div>`
+  }).join('');
+}
+
+// ── TRADINGVIEW ───────────────────────────────────────────
+function initTV(){
+  if(window.TradingView){
+    new TradingView.widget({
+      autosize:true,symbol:'BYBIT:BTCUSDT.P',interval:'5',
+      timezone:'America/Argentina/Buenos_Aires',
+      theme:'dark',style:'1',locale:'es',
+      toolbar_bg:'#09090f',enable_publishing:false,
+      hide_top_toolbar:false,save_image:false,
+      container_id:'tradingview_btc',
+      studies:['RSI@tv-basicstudies','BB@tv-basicstudies'],
+      overrides:{
+        'paneProperties.background':'#09090f',
+        'paneProperties.backgroundType':'solid',
+        'scalesProperties.textColor':'rgba(244,240,232,0.3)',
+        'mainSeriesProperties.candleStyle.upColor':'#c9844a',
+        'mainSeriesProperties.candleStyle.downColor':'#e05555',
+        'mainSeriesProperties.candleStyle.borderUpColor':'#c9844a',
+        'mainSeriesProperties.candleStyle.borderDownColor':'#e05555',
+        'mainSeriesProperties.candleStyle.wickUpColor':'rgba(201,132,74,0.6)',
+        'mainSeriesProperties.candleStyle.wickDownColor':'rgba(224,85,85,0.6)',
+      }
+    });
+  }
+}
+
+// ── DESCONECTAR ───────────────────────────────────────────
+async function desconectar(){await fetch('/api/disconnect',{method:'POST'});location.reload()}
+
+// Enter para conectar
+['api-key','api-secret'].forEach(id=>{$(id).addEventListener('keydown',e=>{if(e.key==='Enter')conectar()})});
+
+// Auto-sesión
+(async()=>{try{const r=await fetch('/api/status'),d=await r.json();if(d.conectado){const w=await fetch('/api/wallet'),wd=await w.json();if(wd.ok)showDash(wd.wallet)}}catch{}})();
+</script>
+<script src="https://s3.tradingview.com/tv.js"></script>
+</body>
+</html>
