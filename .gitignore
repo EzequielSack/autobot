@@ -44,3 +44,6 @@ publicar/*.zip
 # Windows
 Thumbs.db
 Desktop.ini
+
+# Claude Code — configuración local del IDE
+.claude/
