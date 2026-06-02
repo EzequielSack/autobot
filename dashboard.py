@@ -13,6 +13,7 @@ from datetime import datetime
 import pandas as pd
 from pybit.unified_trading import HTTP
 from secure_env import load_secure_env
+from config import PARES_CONFIG, REAL_TRADING, PAPER_TRADING
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
@@ -29,7 +30,7 @@ API_KEY    = os.getenv("BYBIT_API_KEY")
 API_SECRET = os.getenv("BYBIT_API_SECRET")
 TESTNET    = os.getenv("TESTNET", "true").lower() == "true"
 
-SYMBOLS          = ["BTCUSDT", "ETHUSDT"]
+SYMBOLS          = list(PARES_CONFIG.keys())   # BTC + ETH + SOL
 REFRESH_SECONDS  = 30
 TRADES_CSV       = "data/trades.csv"
 

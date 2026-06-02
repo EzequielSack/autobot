@@ -23,6 +23,7 @@ from pybit.unified_trading import HTTP
 import pandas as pd
 import numpy as np
 from secure_env import load_secure_env
+from config import PARES_CONFIG, MAX_POSICIONES_ABIERTAS, DAILY_LOSS_LIMIT, REAL_TRADING, PAPER_TRADING
 
 # ─── CONFIGURACIÓN ────────────────────────────────────────
 load_secure_env()
@@ -32,7 +33,7 @@ API_SECRET = os.getenv("BYBIT_API_SECRET")
 TESTNET    = os.getenv("TESTNET", "true").lower() == "true"
 
 # Parámetros del bot
-SYMBOLS        = ["BTCUSDT"]          # ETH excluido — PF insuficiente en backtest
+SYMBOLS        = list(PARES_CONFIG.keys())   # BTC (real) + ETH + SOL (paper)
 LEVERAGE       = 3
 RISK_PER_TRADE = 0.005               # 0.5% — óptimo según análisis cuantitativo
 TIMEFRAME      = "5"                 # 5 minutos — ejecución
@@ -69,7 +70,7 @@ ADX_THRESHOLD = 25
 SESSION_START = 8    # 08:00 UTC
 SESSION_END   = 22   # 22:00 UTC
 # Horas con PF < 1 dentro de la sesión — se saltan
-HORAS_MALAS   = {10, 13, 19, 21}
+HORAS_MALAS   = {10, 12, 13, 19, 21}   # 12h agregado: 0% win rate, -$104.80 en backtest
 # Días malos: Viernes=4, Sábado=5 (0=Lunes)
 DIAS_MALOS    = {4, 5}              # Viernes y Sábado
 
@@ -438,13 +439,13 @@ def set_leverage(symbol: str):
         log.warning(f"Apalancamiento ya configurado o error: {e}")
 
 
-def calc_position_size(balance: float, atr: float, precio: float, mult: float) -> float:
+def calc_position_size(balance: float, atr: float, precio: float,
+                       mult: float, risk_weight: float = 1.0) -> float:
     """
-    Calcula el tamaño de la posición.
-    Riesgo = 0.5% del capital (validado: drawdown -13% esperado).
-    Stop loss = 1.2 × ATR.
+    Riesgo efectivo = RISK_PER_TRADE × mult × risk_weight (del par).
+    BTC: weight 0.50 | ETH: 0.30 | SOL: 0.20
     """
-    riesgo_usdt = balance * RISK_PER_TRADE * mult
+    riesgo_usdt = balance * RISK_PER_TRADE * mult * risk_weight
     stop_dist   = atr * ATR_SL_MULT
     qty_raw     = (riesgo_usdt * LEVERAGE) / stop_dist
     qty         = round(qty_raw, 3)
@@ -522,6 +523,86 @@ def log_trade(symbol, side, qty, precio, sl, tp, adx, rsi, htf_trend, pos_mult):
 
 
 # ══════════════════════════════════════════════════════════
+#   SCORE DE CALIDAD DE SEÑAL
+# ══════════════════════════════════════════════════════════
+
+def calc_signal_score(df: pd.DataFrame, htf_trend: str, signal: str, symbol: str) -> int:
+    """
+    Puntúa la calidad de una señal entre 0 y 100.
+    Permite comparar señales de distintos pares y elegir la mejor.
+    Solo tiene sentido cuando signal != 'NONE'.
+    """
+    if signal == "NONE" or df.empty or len(df) < 2:
+        return 0
+
+    last  = df.iloc[-1]
+    precio = float(last["close"])
+    score  = 0
+
+    # ── BB: profundidad de penetración ───────────────────────
+    bb_lower = float(last.get("bb_lower", precio))
+    bb_upper = float(last.get("bb_upper", precio))
+    if signal == "LONG":
+        penetracion = (bb_lower - precio) / max(bb_lower, 1) * 100
+    else:
+        penetracion = (precio - bb_upper) / max(bb_upper, 1) * 100
+    if penetracion >= 0.3:    score += 25
+    elif penetracion >= 0.0:  score += 18
+    else:                     score += 10
+
+    # ── RSI: cuán extremo está el momentum ───────────────────
+    rsi = float(last.get("rsi", 50))
+    if signal == "LONG":
+        if rsi < 20:    score += 25
+        elif rsi < 25:  score += 20
+        else:           score += 15   # <= 30
+    else:
+        if rsi > 80:    score += 25
+        elif rsi > 75:  score += 20
+        else:           score += 15   # >= 70
+
+    # ── HTF/EMA: siempre confirmado si signal != NONE ────────
+    score += 20
+
+    # ── Volumen: cuánto supera el promedio ────────────────────
+    vol_avg = float(last.get("vol_avg", 1)) or 1
+    vol     = float(last.get("volume", 0))
+    if last.get("vol_ok", False):
+        ratio = vol / vol_avg
+        if ratio >= 2.0:    score += 15
+        elif ratio >= 1.5:  score += 12
+        else:               score += 8
+
+    # ── ADX: tendencia clara pero no agotada ──────────────────
+    adx = last.get("adx", 0)
+    try:
+        adx = float(adx)
+        if pd.isna(adx): adx = 0
+    except (TypeError, ValueError):
+        adx = 0
+    if 20 <= adx <= 40:   score += 15
+    elif adx > 40:        score += 8
+    elif adx >= 15:       score += 5
+
+    # ── ATR: volatilidad razonable ────────────────────────────
+    atr = float(last.get("atr", 0)) if last.get("atr") else 0
+    if atr > 0 and precio > 0:
+        atr_pct = atr / precio * 100
+        if atr_pct < 0.5:    score += 10
+        elif atr_pct < 1.0:  score += 7
+        elif atr_pct < 1.5:  score += 3
+        else:                score -= 5
+
+    # ── Penalización base por par ─────────────────────────────
+    if symbol == "SOLUSDT":
+        score -= 10
+    elif symbol == "ETHUSDT":
+        score -= 5
+
+    return max(0, min(100, int(score)))
+
+
+# ══════════════════════════════════════════════════════════
 #   LOOP PRINCIPAL
 # ══════════════════════════════════════════════════════════
 
@@ -541,114 +622,196 @@ def limpiar_logs_viejos(dias: int = 7) -> None:
 
 def run():
     limpiar_logs_viejos(dias=7)
-    log.info("=" * 56)
-    log.info("  EZBOT v2.2 — Parámetros optimizados")
-    log.info(f"  Modo      : {'TESTNET 🧪' if TESTNET else 'REAL 🔴'}")
-    log.info(f"  Pares     : {SYMBOLS}")
-    log.info(f"  Leverage  : {LEVERAGE}x")
-    log.info(f"  Riesgo    : {RISK_PER_TRADE*100}% por operación")
-    log.info(f"  SL/TP     : {ATR_SL_MULT}x ATR / {ATR_TP_MULT}x ATR (ratio 1:3.5)")
-    log.info(f"  Sesión    : {SESSION_START}h-{SESSION_END}h UTC")
-    log.info(f"  Días off  : Viernes y Sábado")
-    log.info(f"  Horas off : {sorted(HORAS_MALAS)}")
-    log.info(f"  Breaker   : pausa {PAUSA_MINUTOS}min tras {MAX_PERDIDAS_CONSECUTIVAS} pérdidas")
-    log.info(f"  Sensores  : BB + RSI + ATR + EMA1h + VOL + ADX")
-    log.info("=" * 56)
+    log.info("=" * 62)
+    log.info("  AUTOBOT v3.0 — Multi-par BTC + ETH + SOL")
+    log.info(f"  Modo       : {'TESTNET' if TESTNET else 'REAL'}")
+    log.info(f"  Real       : {REAL_TRADING}")
+    log.info(f"  Paper      : {PAPER_TRADING}")
+    log.info(f"  Leverage   : {LEVERAGE}x | Riesgo base: {RISK_PER_TRADE*100}%")
+    log.info(f"  SL/TP      : {ATR_SL_MULT}xATR / {ATR_TP_MULT}xATR (1:3.5)")
+    log.info(f"  Sesion     : {SESSION_START}h-{SESSION_END}h UTC")
+    log.info(f"  Dias off   : Viernes y Sabado")
+    log.info(f"  Horas off  : {sorted(HORAS_MALAS)}")
+    log.info(f"  Breaker    : {MAX_PERDIDAS_CONSECUTIVAS} perdidas -> {PAUSA_MINUTOS}min pausa")
+    log.info(f"  Daily limit: -{DAILY_LOSS_LIMIT*100:.0f}% capital/dia")
+    log.info("=" * 62)
 
     for sym in SYMBOLS:
         set_leverage(sym)
 
+    capital_inicio_dia: float = 0.0
+    fecha_actual = None
     ciclo = 0
+
     while True:
         ciclo += 1
-        log.info(f"\n{'─'*40}")
-        log.info(f"Ciclo #{ciclo} | {datetime.now().strftime('%H:%M:%S')}")
-        log.info(f"{'─'*40}")
 
-        # ── Verificar sesión válida ────────────────────────
+        # ── Reset diario ──────────────────────────────────────
+        hoy = datetime.now(timezone.utc).date()
+        if hoy != fecha_actual:
+            fecha_actual = hoy
+            capital_inicio_dia = get_balance()
+            log.info(f"Nuevo dia UTC — capital base: ${capital_inicio_dia:.2f} USDT")
+
+        log.info(f"\n{'─'*46}")
+        log.info(f"Ciclo #{ciclo} | {datetime.now().strftime('%H:%M:%S')}")
+        log.info(f"{'─'*46}")
+
+        # ── Sesion valida ─────────────────────────────────────
         if not en_sesion_valida():
-            log.info(f"⏱️  Próximo ciclo en {LOOP_SLEEP}s...")
+            log.info(f"Proximo ciclo en {LOOP_SLEEP}s...")
             time.sleep(LOOP_SLEEP)
             continue
 
-        # ── Verificar circuit breaker ──────────────────────
+        # ── Circuit breaker ───────────────────────────────────
         if not verificar_circuit_breaker():
             time.sleep(LOOP_SLEEP)
             continue
 
+        # ── Balance y daily loss limit ────────────────────────
         balance = get_balance()
-        log.info(f"💰 Balance: {balance:.2f} USDT")
+        log.info(f"Balance: ${balance:.2f} USDT")
 
         if balance < 10:
-            log.warning("⚠️  Balance insuficiente — esperando...")
+            log.warning("Balance insuficiente — esperando...")
             time.sleep(LOOP_SLEEP * 5)
             continue
 
-        for symbol in SYMBOLS:
-            log.info(f"\n🔍 {symbol}")
-
-            # ── Verificar posición abierta ─────────────────
-            pos = get_open_position(symbol)
-            if pos:
-                pnl = float(pos.get("unrealisedPnl", 0))
-                log.info(
-                    f"⏸️  Posición abierta en {symbol} | "
-                    f"PnL actual: ${pnl:.4f} — esperando cierre"
+        if capital_inicio_dia > 0:
+            perdida_pct = (capital_inicio_dia - balance) / capital_inicio_dia
+            if perdida_pct >= DAILY_LOSS_LIMIT:
+                log.warning(
+                    f"DAILY LOSS LIMIT: -{perdida_pct*100:.1f}% "
+                    f"(${capital_inicio_dia - balance:.2f}) — pausando hasta manana"
                 )
+                time.sleep(LOOP_SLEEP)
                 continue
 
-            # ── Sensor 4: EMA 1h (el río) ──────────────────
-            htf_trend = get_htf_trend(symbol)
-            log.info(f"🧭 Tendencia 1h: {htf_trend}")
+        # ── Posicion abierta en CUALQUIER par → esperar ───────
+        pos_abierta = None
+        for sym in SYMBOLS:
+            p = get_open_position(sym)
+            if p:
+                pnl = float(p.get("unrealisedPnl", 0))
+                log.info(f"Posicion abierta {sym} | PnL: ${pnl:.4f} — esperando cierre")
+                pos_abierta = sym
+                break
 
-            if htf_trend == "NEUTRAL":
-                log.info("⏳ Río neutral — esperando definición")
+        if pos_abierta:
+            time.sleep(LOOP_SLEEP)
+            continue
+
+        # ── Evaluar señales en todos los pares ────────────────
+        candidatos = []
+        btc_atr_pct: float = 0.0
+
+        for sym in sorted(SYMBOLS, key=lambda s: PARES_CONFIG[s]["priority"]):
+            htf = get_htf_trend(sym)
+            log.info(f"[{sym}] Tendencia 1h: {htf}")
+
+            if htf == "NEUTRAL":
+                log.info(f"[{sym}] Score: 0 | neutral — sin evaluar")
                 continue
 
-            # ── Datos y sensores en 5 minutos ──────────────
-            df = get_klines(symbol, TIMEFRAME, limit=200)
+            df = get_klines(sym, TIMEFRAME, limit=200)
             if df.empty:
                 continue
-
             df = add_all_sensors(df)
 
-            # ── Evaluar los 6 sensores ──────────────────────
-            signal, pos_mult = get_signal(df, htf_trend)
+            last = df.iloc[-1]
 
-            if signal == "NONE":
-                log.info(f"⏳ Sin señal en {symbol}")
-                continue
+            # Guardar ATR% de BTC como referencia de volatilidad
+            if sym == "BTCUSDT" and float(last["close"]) > 0:
+                btc_atr_pct = float(last["atr"]) / float(last["close"]) * 100
 
-            # ── Calcular tamaño de posición ─────────────────
-            last   = df.iloc[-1]
-            precio = last["close"]
-            atr    = last["atr"]
-            rsi    = last["rsi"]
-            adx    = last["adx"]
-            qty    = calc_position_size(balance, atr, precio, pos_mult)
-            side   = "Buy" if signal == "LONG" else "Sell"
+            # Filtros extra para SOL
+            if sym == "SOLUSDT":
+                sol_atr_pct = float(last["atr"]) / float(last["close"]) * 100
+                adx_sol     = float(last.get("adx", 0) or 0)
+                if btc_atr_pct > 0 and sol_atr_pct > btc_atr_pct * 2:
+                    log.info(
+                        f"[{sym}] Score: — | ATR% {sol_atr_pct:.2f}% "
+                        f"> 2x BTC {btc_atr_pct:.2f}% — volatilidad excesiva"
+                    )
+                    continue
+                if not pd.isna(adx_sol) and adx_sol < 20:
+                    log.info(f"[{sym}] Score: — | ADX {adx_sol:.1f} < 20 — tendencia insuficiente")
+                    continue
 
-            riesgo_usdt = round(qty * atr * ATR_SL_MULT, 2)
-            log.info(
-                f"🎯 Entrando {signal} | qty: {qty} | "
-                f"precio: {precio:.2f} | mult: {pos_mult} | "
-                f"riesgo: ${riesgo_usdt}"
-            )
+            signal, pos_mult = get_signal(df, htf)
+            score = calc_signal_score(df, htf, signal, sym)
+            min_score = PARES_CONFIG[sym]["min_score"]
 
-            # ── Ejecutar la orden ───────────────────────────
-            resp = place_order(symbol, side, qty, precio, atr)
+            if signal != "NONE" and score >= min_score:
+                candidatos.append({
+                    "symbol": sym, "signal": signal, "score": score,
+                    "pos_mult": pos_mult, "df": df, "htf": htf,
+                })
+                log.info(f"[{sym}] Score: {score:3d} | Señal: {signal} | CANDIDATO")
+            else:
+                razon = "sin señal" if signal == "NONE" else f"score {score} < min {min_score}"
+                log.info(f"[{sym}] Score: {score:3d} | {razon}")
 
-            if resp:
-                stop_dist = atr * ATR_SL_MULT
-                tp_dist   = atr * ATR_TP_MULT
-                sl = precio - stop_dist if side == "Buy" else precio + stop_dist
-                tp = precio + tp_dist   if side == "Buy" else precio - tp_dist
-                log_trade(
-                    symbol, side, qty, precio, sl, tp,
-                    adx, rsi, htf_trend, pos_mult
+        # ── Sin candidatos ────────────────────────────────────
+        if not candidatos:
+            log.info("Sin candidatos este ciclo")
+            time.sleep(LOOP_SLEEP)
+            continue
+
+        # ── Elegir mejor señal (score DESC, prioridad ASC) ────
+        mejor = sorted(
+            candidatos,
+            key=lambda c: (-c["score"], PARES_CONFIG[c["symbol"]]["priority"])
+        )[0]
+
+        for c in candidatos:
+            if c["symbol"] != mejor["symbol"]:
+                log.info(
+                    f"[{c['symbol']}] Score: {c['score']:3d} | omitido "
+                    f"(mejor: {mejor['symbol']} score {mejor['score']})"
                 )
 
-        log.info(f"\n⏱️  Próximo ciclo en {LOOP_SLEEP}s...")
+        # ── Ejecutar o paper trade ────────────────────────────
+        sym      = mejor["symbol"]
+        signal   = mejor["signal"]
+        pos_mult = mejor["pos_mult"]
+        df       = mejor["df"]
+        htf      = mejor["htf"]
+        is_real  = sym in REAL_TRADING
+        modo     = "REAL" if is_real else "PAPER"
+
+        last   = df.iloc[-1]
+        precio = float(last["close"])
+        atr    = float(last["atr"])
+        rsi    = float(last["rsi"])
+        adx    = float(last.get("adx", 0) or 0)
+
+        risk_w = PARES_CONFIG[sym]["risk_weight"]
+        qty    = calc_position_size(balance, atr, precio, pos_mult, risk_w)
+        side   = "Buy" if signal == "LONG" else "Sell"
+
+        stop_dist = atr * ATR_SL_MULT
+        tp_dist   = atr * ATR_TP_MULT
+        sl = round(precio - stop_dist if side == "Buy" else precio + stop_dist, 4)
+        tp = round(precio + tp_dist   if side == "Buy" else precio - tp_dist,   4)
+        riesgo_usdt = round(qty * stop_dist, 2)
+
+        log.info(
+            f"[{modo}] {sym} | {signal} | qty: {qty} | precio: {precio:.4f} | "
+            f"SL: {sl} | TP: {tp} | riesgo: ${riesgo_usdt} | score: {mejor['score']}"
+        )
+
+        if is_real:
+            resp = place_order(sym, side, qty, precio, atr)
+            if resp:
+                log_trade(sym, side, qty, precio, sl, tp, adx, rsi, htf, pos_mult)
+        else:
+            log.info(
+                f"[PAPER] {sym} — orden simulada: {side} {qty} @ {precio:.4f} "
+                f"SL: {sl} TP: {tp} | riesgo simulado: ${riesgo_usdt}"
+            )
+
+        log.info(f"Proximo ciclo en {LOOP_SLEEP}s...")
         time.sleep(LOOP_SLEEP)
 
 

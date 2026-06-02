@@ -1,7 +1,12 @@
-# EZBOT v2.0 — Bot de Trading para Bybit Futures
+# AUTOBOT v3.0 — Bot de Trading Multi-par para Bybit Futures
+
+**El bot monitorea BTC, ETH y SOL simultáneamente, pero solo opera uno a la vez.
+Elige el mejor par según calidad de señal y prioridad. BTC es la base, ETH es el
+segundo mercado serio y SOL es par de oportunidad con riesgo reducido.
+ETH y SOL corren en modo paper primero.**
 
 6 Sensores: Bollinger Bands + RSI + ATR + EMA 1h + Volumen + ADX  
-Capital sugerido: $300 USDT | Apalancamiento: 3x | Riesgo: 2%/trade
+Capital sugerido: $300 USDT | Apalancamiento: 3x | Riesgo base: 0.5%/trade × risk_weight
 
 ---
 
