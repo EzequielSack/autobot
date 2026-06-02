@@ -20,12 +20,13 @@ import matplotlib.dates as mdates
 from datetime import datetime, timedelta, timezone
 
 # ─── PARÁMETROS v2.1 (OPTIMIZADOS) ───────────────────────
-SYMBOLS        = ["BTCUSDT"]   # ETH eliminado — profit factor insuficiente
-TIMEFRAME      = "5"
-TIMEFRAME_HTF  = "60"
-LEVERAGE       = 3
-RISK_PER_TRADE = 0.01          # MEJORA 1: 1% (antes 2%) → reduce drawdown ~50%
+SYMBOLS         = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+TIMEFRAME       = "5"
+TIMEFRAME_HTF   = "60"
+LEVERAGE        = 3
+RISK_PER_TRADE  = 0.005        # 0.5% — alineado con bot.py
 CAPITAL_INICIAL = 300.0
+DIAS_BT         = 350          # período del análisis cuantitativo
 
 # Bollinger Bands
 BB_PERIOD = 20
@@ -52,11 +53,13 @@ VOL_MULT   = 1.5   # antes 1.2
 ADX_PERIOD    = 14
 ADX_THRESHOLD = 25
 
-# MEJORA 3: Filtro horario — solo operar en mercado activo (UTC)
-SESSION_START = 8    # 08:00 UTC (Londres abre)
-SESSION_END   = 22   # 22:00 UTC (Nueva York cierra)
+# Filtros horarios — alineados con bot.py
+SESSION_START = 8
+SESSION_END   = 22
+HORAS_MALAS   = {10, 12, 13, 19, 21}   # 12h agregado: 0% win rate en backtest BTC
+DIAS_MALOS    = {4, 5}                  # Viernes=4, Sábado=5
 
-# MEJORA 4: Circuit breaker — pausa tras N pérdidas consecutivas
+# Circuit breaker
 MAX_PERDIDAS_CONSECUTIVAS = 3
 PAUSA_CIRCUIT_BREAKER     = 48  # velas de 5min = 4 horas
 
@@ -105,7 +108,8 @@ def _fetch_klines_chunk(symbol: str, interval: str, start_ms: int, end_ms: int) 
     return data["result"]["list"]
 
 
-def get_klines_historico(symbol: str, interval: str, dias: int = 180) -> pd.DataFrame:
+def get_klines_historico(symbol: str, interval: str, dias: int = 180,
+                         usar_cache: bool = True) -> pd.DataFrame:
     """
     Descarga datos históricos del endpoint público de Bybit
     paginando en bloques de 1000 velas.
@@ -118,6 +122,18 @@ def get_klines_historico(symbol: str, interval: str, dias: int = 180) -> pd.Data
     Returns:
         DataFrame ordenado cronológicamente con OHLCV
     """
+    cache_path = f"data/cache_{symbol.lower()}_{interval}m.pkl"
+    if usar_cache and os.path.exists(cache_path):
+        try:
+            df_c = pd.read_pickle(cache_path)
+            cache_age_days = (datetime.now(timezone.utc) - df_c["timestamp"].max()).days
+            if cache_age_days <= 1:
+                log.info(f"Cache hit: {symbol} {interval}m ({len(df_c)} velas, {cache_age_days}d de antiguedad)")
+                return df_c
+            log.info(f"Cache obsoleto ({cache_age_days}d) — re-descargando {symbol} {interval}m")
+        except Exception:
+            pass
+
     log.info(f"📥 Descargando {symbol} {interval}min — últimos {dias} días...")
 
     ahora_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -176,6 +192,11 @@ def get_klines_historico(symbol: str, interval: str, dias: int = 180) -> pd.Data
 
     log.info(f"✅ {symbol}: {len(df)} velas descargadas | "
              f"{df['timestamp'].iloc[0].date()} → {df['timestamp'].iloc[-1].date()}")
+    try:
+        df.to_pickle(cache_path)
+        log.info(f"Cache guardado: {cache_path}")
+    except Exception:
+        pass
     return df
 
 
@@ -365,8 +386,10 @@ def simular_operaciones(df: pd.DataFrame, htf_trend_series: pd.Series, symbol: s
         low_vela  = row["low"]
         hora_utc  = pd.to_datetime(row["timestamp"]).hour
 
-        # MEJORA 3: Filtro horario — solo operar en sesión activa
-        en_sesion = SESSION_START <= hora_utc < SESSION_END
+        dia_semana = pd.to_datetime(row["timestamp"]).weekday()  # 0=Lun, 4=Vie, 5=Sáb
+        en_sesion = (SESSION_START <= hora_utc < SESSION_END
+                     and hora_utc not in HORAS_MALAS
+                     and dia_semana not in DIAS_MALOS)
 
         # MEJORA 4: Circuit breaker — contar velas de pausa
         if velas_pausa > 0:
@@ -687,9 +710,9 @@ def run_backtest():
         log.info(f"  Procesando {symbol}...")
         log.info(f"{'─'*50}")
 
-        # Descarga datos en 5min y 1h
-        df_5m = get_klines_historico(symbol, interval=TIMEFRAME,     dias=730)
-        df_1h = get_klines_historico(symbol, interval=TIMEFRAME_HTF, dias=735)
+        # Descarga datos en 5min y 1h (con caché de disco)
+        df_5m = get_klines_historico(symbol, interval=TIMEFRAME,     dias=DIAS_BT)
+        df_1h = get_klines_historico(symbol, interval=TIMEFRAME_HTF, dias=DIAS_BT + 5)
 
         if df_5m.empty or df_1h.empty:
             log.error(f"Datos insuficientes para {symbol} — saltando")
@@ -709,6 +732,11 @@ def run_backtest():
         # Métricas por símbolo
         metricas_sym = calcular_metricas(operaciones)
         imprimir_resumen(metricas_sym, symbol)
+
+        # CSV por símbolo para análisis posterior
+        if operaciones:
+            pd.DataFrame(operaciones).to_csv(
+                f"data/bt_{symbol.lower()}.csv", index=False)
 
         todas_operaciones.extend(operaciones)
 
