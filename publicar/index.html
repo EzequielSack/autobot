@@ -213,7 +213,7 @@ footer{border-top:1px solid var(--bord);padding:32px 40px;display:flex;align-ite
 .steps-line{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:48px;position:relative}
 .step-card{background:var(--card);border:1px solid var(--bord);border-radius:18px;padding:28px 24px;transition:all .25s;display:flex;flex-direction:column;min-height:210px}
 .step-card:hover{border-color:rgba(201,132,74,0.35);transform:translateY(-4px);box-shadow:0 20px 60px rgba(201,132,74,0.08)}
-.step-num-big{font-family:'Playfair Display',serif;font-size:40px;font-weight:900;color:var(--gold);line-height:1;margin-bottom:16px;opacity:.9}
+.step-num-big{font-family:'Playfair Display',serif;font-size:36px;font-weight:900;color:var(--gold);line-height:1;margin-bottom:16px;opacity:.9;width:52px;height:52px;border-radius:50%;border:1px solid rgba(200,140,60,0.4);display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(200,140,60,0.15)}
 .step-head{font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:-.3px}
 .step-text{font-size:13px;color:var(--mut);line-height:1.65;flex:1}
 .step-action{margin-top:14px;font-size:13px;font-weight:700;color:var(--gold);text-decoration:none;transition:color .2s}
@@ -224,6 +224,20 @@ footer{border-top:1px solid var(--bord);padding:32px 40px;display:flex;align-ite
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 .reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
 .reveal.visible{opacity:1;transform:translateY(0)}
+
+/* Staggered card reveal — triggered when parent container gets .visible */
+.inc-grid .inc-card,.steps-line .step-card,.how-grid .how-card,.testi-grid .testi-card{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
+.inc-grid.visible .inc-card,.steps-line.visible .step-card,.how-grid.visible .how-card,.testi-grid.visible .testi-card{opacity:1;transform:translateY(0)}
+.inc-grid.visible .inc-card:nth-child(2),.testi-grid.visible .testi-card:nth-child(2){transition-delay:.07s}
+.inc-grid.visible .inc-card:nth-child(3),.testi-grid.visible .testi-card:nth-child(3){transition-delay:.14s}
+.inc-grid.visible .inc-card:nth-child(4),.testi-grid.visible .testi-card:nth-child(4){transition-delay:.21s}
+.inc-grid.visible .inc-card:nth-child(5){transition-delay:.28s}
+.inc-grid.visible .inc-card:nth-child(6){transition-delay:.35s}
+.steps-line.visible .step-card:nth-child(2){transition-delay:.08s}
+.steps-line.visible .step-card:nth-child(3){transition-delay:.16s}
+.steps-line.visible .step-card:nth-child(4){transition-delay:.24s}
+.how-grid.visible .how-card:nth-child(2){transition-delay:.1s}
+.how-grid.visible .how-card:nth-child(3){transition-delay:.2s}
 
 /* Chart draw animation */
 #chart-line{stroke-dasharray:900;stroke-dashoffset:900}
@@ -388,7 +402,8 @@ footer{border-top:1px solid var(--bord);padding:32px 40px;display:flex;align-ite
       <div class="res-chart reveal">
         <div class="chart-lbl">Curva de equity · $300 iniciales</div>
         <svg class="chart-svg" viewBox="0 0 400 185" preserveAspectRatio="none">
-          <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c9844a" stop-opacity="0.35"/><stop offset="100%" stop-color="#c9844a" stop-opacity="0"/></linearGradient></defs>
+          <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c9844a" stop-opacity="0.35"/><stop offset="100%" stop-color="#c9844a" stop-opacity="0"/></linearGradient><linearGradient id="equity-grd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c9844a" stop-opacity="0.15"/><stop offset="100%" stop-color="#c9844a" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,175 L20,170 L40,165 L60,168 L80,160 L100,150 L115,155 L130,140 L150,125 L170,120 L185,130 L200,105 L220,90 L240,75 L255,85 L270,65 L290,47 L310,37 L330,28 L350,18 L375,12 L400,8 L400,185 L0,185Z" fill="url(#equity-grd)"/>
           <path id="chart-area" d="M0,175 L20,170 L40,165 L60,168 L80,160 L100,150 L115,155 L130,140 L150,125 L170,120 L185,130 L200,105 L220,90 L240,75 L255,85 L270,65 L290,47 L310,37 L330,28 L350,18 L375,12 L400,8 L400,185 L0,185Z" fill="url(#cg)"/>
           <path id="chart-line" d="M0,175 L20,170 L40,165 L60,168 L80,160 L100,150 L115,155 L130,140 L150,125 L170,120 L185,130 L200,105 L220,90 L240,75 L255,85 L270,65 L290,47 L310,37 L330,28 L350,18 L375,12 L400,8" fill="none" stroke="#c9844a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           <line x1="0" y1="175" x2="400" y2="175" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="6,4"/>
@@ -470,6 +485,9 @@ fetchBTC();setInterval(fetchBTC,30000);
 
 // Email
 function handleEmail(e){e.preventDefault();const note=document.getElementById('email-note');note.textContent='✅ Te avisamos cuando el bot opere. ¡Gracias!';note.style.color='#c9844a';}
+
+// Navbar blur on scroll
+(function(){const nav=document.querySelector('nav');if(!nav)return;window.addEventListener('scroll',()=>{if(window.scrollY>20){nav.style.backdropFilter='blur(28px)';nav.style.backgroundColor='rgba(8,9,16,0.97)';nav.style.borderBottom='1px solid rgba(201,132,74,0.18)';}else{nav.style.backdropFilter='';nav.style.backgroundColor='';nav.style.borderBottom='';}},{passive:true});})();
 </script>
 </body>
 </html>
