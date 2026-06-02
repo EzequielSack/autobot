@@ -139,11 +139,29 @@ def get_klines(symbol: str, interval: str, limit: int = 200) -> pd.DataFrame:
 
 
 def get_balance() -> float:
-    """Retorna el balance disponible en USDT."""
+    """Retorna el balance disponible en USDT (robusto ante campos vacíos)."""
     try:
-        resp    = session.get_wallet_balance(accountType="UNIFIED", coin="USDT")
-        balance = float(resp["result"]["list"][0]["coin"][0]["availableToWithdraw"])
-        return balance
+        resp = session.get_wallet_balance(accountType="UNIFIED", coin="USDT")
+        acc  = resp["result"]["list"][0]
+        # Intentar balance total de la cuenta primero
+        for k in ("totalAvailableBalance", "totalEquity"):
+            v = acc.get(k, "")
+            if v not in ("", None):
+                try:
+                    return float(v)
+                except (ValueError, TypeError):
+                    pass
+        # Fallback: buscar USDT en la lista de monedas
+        for coin in acc.get("coin", []):
+            if coin.get("coin") == "USDT":
+                for k in ("availableToWithdraw", "walletBalance", "equity"):
+                    v = coin.get(k, "")
+                    if v not in ("", None):
+                        try:
+                            return float(v)
+                        except (ValueError, TypeError):
+                            pass
+        return 0.0
     except Exception as e:
         log.error(f"Error obteniendo balance: {e}")
         return 0.0
