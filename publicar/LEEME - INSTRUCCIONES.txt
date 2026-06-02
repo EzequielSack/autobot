@@ -1,0 +1,10 @@
+AUTOBOT - por Ezequiel Sack
+================================
+1. Doble click en AUTOBOT.exe
+2. Si Windows avisa: Mas info -> Ejecutar de todos modos
+3. Pega tu API Key y Secret de Bybit (cuenta con fondos)
+4. Iniciar bot
+
+Proyecto experimental y educativo. No es asesoramiento financiero.
+Ezequiel Sack NO tiene acceso a tu dinero.
+Canal: https://www.youtube.com/@EzequielSack/
