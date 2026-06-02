@@ -366,15 +366,22 @@ def actualizar_circuit_breaker(resultado: str):
 #   LÓGICA DE SEÑAL
 # ══════════════════════════════════════════════════════════
 
-def get_signal(df: pd.DataFrame, htf_trend: str) -> tuple[str, float]:
+def get_signal(df: pd.DataFrame, htf_trend: str, symbol: str = "BTCUSDT") -> tuple[str, float]:
     """
-    Evalúa los 6 sensores al mismo tiempo.
-    Solo opera si TODOS confirman.
+    Evalúa los 6 sensores al mismo tiempo usando parámetros específicos del par.
+    Cada par (BTC/ETH/SOL) tiene sus umbrales propios en PARES_CONFIG.
 
     Retorna: (señal, multiplicador_posicion)
     señal = 'LONG', 'SHORT' o 'NONE'
     multiplicador = 1.0 (normal) o 0.5 (tormenta ADX)
     """
+    # Cargar parámetros del par (cae a defaults globales si no está en config)
+    cfg = PARES_CONFIG.get(symbol, {})
+    rsi_os    = cfg.get("rsi_oversold",   RSI_OVERSOLD)
+    rsi_ob    = cfg.get("rsi_overbought", RSI_OVERBOUGHT)
+    bb_min    = cfg.get("bb_min_width",   0.010)
+    vol_mult  = cfg.get("vol_mult",       VOL_MULT)
+
     min_candles = max(BB_PERIOD, RSI_PERIOD, ATR_PERIOD, ADX_PERIOD, VOL_PERIOD) + 5
     if df.empty or len(df) < min_candles:
         return "NONE", 1.0
@@ -388,11 +395,12 @@ def get_signal(df: pd.DataFrame, htf_trend: str) -> tuple[str, float]:
     bb_width = last["bb_width"]
     rsi      = last["rsi"]
     atr      = last["atr"]
-    vol_ok   = last["vol_ok"]
+    # Filtro de volumen reevaluado con vol_mult específico del par
+    vol_ok   = last["volume"] >= last["vol_avg"] * vol_mult
     adx      = last["adx"]
 
-    # ── Filtros globales ──────────────────────────────────
-    if bb_width < 0.01:
+    # ── Filtros (umbrales por par) ────────────────────────
+    if bb_width < bb_min:
         log.info("⏳ BB: bandas comprimidas — esperando expansión")
         return "NONE", 1.0
 
@@ -410,9 +418,9 @@ def get_signal(df: pd.DataFrame, htf_trend: str) -> tuple[str, float]:
     if pos_mult == 0.5:
         log.info(f"⚡ ADX alto ({adx:.1f}) — posición reducida al 50%")
 
-    # ── Señal LONG ────────────────────────────────────────
+    # ── Señal LONG (RSI específico del par) ───────────────
     long_bb  = prev["close"] > bb_lower and precio <= bb_lower
-    long_rsi = rsi <= RSI_OVERSOLD
+    long_rsi = rsi <= rsi_os
     long_htf = htf_trend == "BULLISH"
 
     if long_bb and long_rsi and long_htf:
@@ -423,9 +431,9 @@ def get_signal(df: pd.DataFrame, htf_trend: str) -> tuple[str, float]:
         )
         return "LONG", pos_mult
 
-    # ── Señal SHORT ───────────────────────────────────────
+    # ── Señal SHORT (RSI específico del par) ──────────────
     short_bb  = prev["close"] < bb_upper and precio >= bb_upper
-    short_rsi = rsi >= RSI_OVERBOUGHT
+    short_rsi = rsi >= rsi_ob
     short_htf = htf_trend == "BEARISH"
 
     if short_bb and short_rsi and short_htf:
@@ -458,13 +466,17 @@ def set_leverage(symbol: str):
 
 
 def calc_position_size(balance: float, atr: float, precio: float,
-                       mult: float, risk_weight: float = 1.0) -> float:
+                       mult: float, risk_weight: float = 1.0,
+                       sl_mult: float = None) -> float:
     """
     Riesgo efectivo = RISK_PER_TRADE × mult × risk_weight (del par).
     BTC: weight 0.50 | ETH: 0.30 | SOL: 0.20
+    sl_mult: específico del par (BTC 1.2 · ETH/SOL 1.5). Cae al global si None.
     """
+    if sl_mult is None:
+        sl_mult = ATR_SL_MULT
     riesgo_usdt = balance * RISK_PER_TRADE * mult * risk_weight
-    stop_dist   = atr * ATR_SL_MULT
+    stop_dist   = atr * sl_mult
     qty_raw     = (riesgo_usdt * LEVERAGE) / stop_dist
     qty         = round(qty_raw, 3)
     return max(qty, 0.001)
@@ -756,7 +768,7 @@ def run():
                     log.info(f"[{sym}] Score: — | ADX {adx_sol:.1f} < 20 — tendencia insuficiente")
                     continue
 
-            signal, pos_mult = get_signal(df, htf)
+            signal, pos_mult = get_signal(df, htf, sym)
             score = calc_signal_score(df, htf, signal, sym)
             min_score = PARES_CONFIG[sym]["min_score"]
 
@@ -804,12 +816,16 @@ def run():
         rsi    = float(last["rsi"])
         adx    = float(last.get("adx", 0) or 0)
 
+        # SL/TP específicos del par (BTC: 1.2/4.2 · ETH: 1.5/3.5 · SOL: 1.5/2.5)
+        sl_mult_par = PARES_CONFIG[sym].get("sl_mult", ATR_SL_MULT)
+        tp_mult_par = PARES_CONFIG[sym].get("tp_mult", ATR_TP_MULT)
+
         risk_w = PARES_CONFIG[sym]["risk_weight"]
-        qty    = calc_position_size(balance, atr, precio, pos_mult, risk_w)
+        qty    = calc_position_size(balance, atr, precio, pos_mult, risk_w, sl_mult_par)
         side   = "Buy" if signal == "LONG" else "Sell"
 
-        stop_dist = atr * ATR_SL_MULT
-        tp_dist   = atr * ATR_TP_MULT
+        stop_dist = atr * sl_mult_par
+        tp_dist   = atr * tp_mult_par
         sl = round(precio - stop_dist if side == "Buy" else precio + stop_dist, 4)
         tp = round(precio + tp_dist   if side == "Buy" else precio - tp_dist,   4)
         riesgo_usdt = round(qty * stop_dist, 2)
