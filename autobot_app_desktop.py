@@ -80,6 +80,7 @@ BORD   = "#2a2620"
 class BotEngine:
     def __init__(self, api_key, api_secret, testnet, log_callback):
         # recv_window amplio para tolerar pequeñas diferencias de reloj
+        self.testnet = testnet
         self.session = HTTP(testnet=testnet, api_key=api_key,
                             api_secret=api_secret, recv_window=15000)
         self.log = log_callback
@@ -140,14 +141,34 @@ class BotEngine:
         except Exception as e:
             txt = str(e)
             if "401" in txt or "10003" in txt or "invalid" in txt.lower():
-                return False, ("No se pudo autenticar con Bybit (error 401).\n\n"
-                    "Revisá esto:\n"
-                    "• ¿Tildaste 'Testnet' correctamente? (claves reales = destildado)\n"
-                    "• ¿Copiaste bien el API Secret? Se muestra una sola vez.\n"
-                    "• ¿La API Key tiene restricción de IP? Quitala o agregá tu IP.\n"
-                    "• ¿Tenés VPN o firewall que bloquee Bybit? Probá sin VPN.\n\n"
-                    "Lo más seguro: creá una clave nueva, copiala con el botón 'Copy' "
-                    "y asegurate de que tenga permiso 'Unified Trading · Read+Write' sin IP restriction.")
+                if self.testnet:
+                    return False, (
+                        "No se pudo autenticar con Bybit Testnet.\n\n"
+                        "Las keys de TESTNET son distintas a las de tu cuenta real.\n"
+                        "Tenés que crearlas en:\n"
+                        "    testnet.bybit.com → Perfil → API Management\n\n"
+                        "Pasos:\n"
+                        "1. Entrá a testnet.bybit.com (no bybit.com)\n"
+                        "2. Creá una cuenta o iniciá sesión\n"
+                        "3. Generá una nueva API Key con permiso\n"
+                        "   'Unified Trading · Read + Write'\n"
+                        "4. Copiá Key y Secret, y pegálos acá\n\n"
+                        "• ¿El API Secret está bien copiado? Se muestra una sola vez.\n"
+                        "• ¿Tiene restricción de IP? Quitala."
+                    )
+                else:
+                    return False, (
+                        "No se pudo autenticar con Bybit.\n\n"
+                        "Revisá esto:\n"
+                        "• ¿Las keys son de tu cuenta real en bybit.com?\n"
+                        "  (Si querés usar testnet, tildá 'Cuenta de prueba'\n"
+                        "   y usá keys de testnet.bybit.com)\n"
+                        "• ¿Copiaste bien el API Secret? Se muestra una sola vez.\n"
+                        "• ¿La API Key tiene restricción de IP? Quitala.\n"
+                        "• ¿Tenés VPN activa? Probá desactivándola.\n\n"
+                        "Para crear una key nueva: bybit.com → Perfil\n"
+                        "→ API Management → permisos 'Unified Trading · Read+Write'."
+                    )
             if "10002" in txt or "timestamp" in txt.lower():
                 return False, ("Tu reloj está desincronizado.\n"
                     "Sincronizá la hora de Windows: Configuración → Hora e idioma → "
