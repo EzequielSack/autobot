@@ -20,10 +20,10 @@ from datetime import datetime
 from pybit.unified_trading import HTTP
 import pandas as pd
 import numpy as np
-from dotenv import load_dotenv
+from secure_env import load_secure_env
 
 # ─── CONFIGURACIÓN (idéntica al bot.py) ───────────────────
-load_dotenv()
+load_secure_env()
 
 API_KEY    = os.getenv("BYBIT_API_KEY")
 API_SECRET = os.getenv("BYBIT_API_SECRET")

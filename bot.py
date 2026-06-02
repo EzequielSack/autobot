@@ -22,10 +22,10 @@ from datetime import datetime, timezone
 from pybit.unified_trading import HTTP
 import pandas as pd
 import numpy as np
-from dotenv import load_dotenv
+from secure_env import load_secure_env
 
 # ─── CONFIGURACIÓN ────────────────────────────────────────
-load_dotenv()
+load_secure_env()
 
 API_KEY    = os.getenv("BYBIT_API_KEY")
 API_SECRET = os.getenv("BYBIT_API_SECRET")
@@ -525,7 +525,22 @@ def log_trade(symbol, side, qty, precio, sl, tp, adx, rsi, htf_trend, pos_mult):
 #   LOOP PRINCIPAL
 # ══════════════════════════════════════════════════════════
 
+def limpiar_logs_viejos(dias: int = 7) -> None:
+    """Elimina logs con más de `dias` días de antigüedad."""
+    import glob
+    from datetime import timedelta
+    limite = datetime.now() - timedelta(days=dias)
+    for ruta in glob.glob("logs/*.log"):
+        try:
+            if datetime.fromtimestamp(os.path.getmtime(ruta)) < limite:
+                os.remove(ruta)
+                log.info(f"🧹 Log eliminado: {ruta}")
+        except Exception:
+            pass
+
+
 def run():
+    limpiar_logs_viejos(dias=7)
     log.info("=" * 56)
     log.info("  EZBOT v2.2 — Parámetros optimizados")
     log.info(f"  Modo      : {'TESTNET 🧪' if TESTNET else 'REAL 🔴'}")

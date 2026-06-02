@@ -12,7 +12,7 @@ import logging
 from datetime import datetime
 import pandas as pd
 from pybit.unified_trading import HTTP
-from dotenv import load_dotenv
+from secure_env import load_secure_env
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
@@ -23,7 +23,7 @@ from rich.live import Live
 from rich.layout import Layout
 
 # ─── CONFIGURACIÓN ────────────────────────────────────────
-load_dotenv()
+load_secure_env()
 
 API_KEY    = os.getenv("BYBIT_API_KEY")
 API_SECRET = os.getenv("BYBIT_API_SECRET")

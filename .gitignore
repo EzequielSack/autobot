@@ -1,6 +1,7 @@
 # Credenciales y configuración local — NUNCA subir
 .env
 *.env.*
+.env.dpapi
 
 # Python
 __pycache__/

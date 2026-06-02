@@ -1,0 +1,5 @@
+﻿SHA256  FEB06CEA550C823A6EBEF88F9193AE72FEB7310E74B2B62C4F93F67EC3A8850D  AUTOBOT.exe
+# AUTOBOT v1.1 -- verificar integridad antes de ejecutar:
+# PowerShell: (Get-FileHash AUTOBOT.exe -Algorithm SHA256).Hash
+# Linux/Mac:  sha256sum AUTOBOT.exe
+# El hash debe coincidir exactamente.
