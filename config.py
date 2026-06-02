@@ -37,9 +37,14 @@ PARES_CONFIG = {
 
 # ── Modo de operación ─────────────────────────────────────────────────────────
 # REAL_TRADING: pares que colocan órdenes reales en Bybit
-# PAPER_TRADING: pares simulados (log sin orden) — ETH y SOL hasta validar en vivo
-REAL_TRADING  = ["BTCUSDT"]
-PAPER_TRADING = ["ETHUSDT", "SOLUSDT"]
+# PAPER_TRADING: pares simulados (log sin orden)
+#
+# Decisión Jun 2026: los 3 pares pasan a REAL.
+# Backtests optimizados muestran PF > 1.4 y drawdown -22% individual.
+# El bot opera UNA sola posición a la vez (MAX_POSICIONES_ABIERTAS = 1) →
+# elige el mejor par por score en cada ciclo, no opera los 3 simultáneamente.
+REAL_TRADING  = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+PAPER_TRADING = []
 
 # ── Límites de exposición ─────────────────────────────────────────────────────
 MAX_POSICIONES_ABIERTAS = 1        # solo una posición abierta a la vez
