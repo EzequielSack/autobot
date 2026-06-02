@@ -15,7 +15,7 @@
   --tg:#229ed9;--yt:#ff0000;
 }
 html{scroll-behavior:smooth}
-body{font-family:'Inter',sans-serif;background-color:var(--bg);background-image:radial-gradient(circle,rgba(255,255,255,0.04) 1px,transparent 1px),radial-gradient(ellipse 80% 50% at 50% 0%,rgba(200,140,60,0.08) 0%,transparent 70%);background-size:32px 32px,100% 100%;color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 
 /* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;background:rgba(10,11,20,0.93);backdrop-filter:blur(20px);border-bottom:1px solid rgba(201,132,74,0.1)}
@@ -60,15 +60,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 .hero-sub{font-size:clamp(14px,2vw,18px);color:var(--mut);line-height:1.7;max-width:520px;margin:16px auto 40px;animation:fadeUp .6s .2s ease both}
 .hero-sub strong{color:var(--text)}
 .hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;animation:fadeUp .6s .3s ease both}
-.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0b14;font-weight:800;font-size:15px;padding:16px 36px;border-radius:10px;text-decoration:none;transition:all .2s;box-shadow:0 0 24px rgba(200,140,60,0.35),0 4px 24px rgba(201,132,74,0.3)}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 40px rgba(200,140,60,0.5),0 12px 40px rgba(201,132,74,0.5)}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0b14;font-weight:800;font-size:15px;padding:16px 36px;border-radius:10px;text-decoration:none;transition:all .2s;box-shadow:0 4px 24px rgba(201,132,74,0.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(201,132,74,0.5)}
 .btn-ghost{background:rgba(255,255,255,0.04);color:var(--text);font-weight:600;font-size:15px;padding:16px 36px;border-radius:10px;text-decoration:none;border:1px solid rgba(255,255,255,0.1);transition:all .2s}
 .btn-ghost:hover{background:rgba(255,255,255,0.08);border-color:rgba(201,132,74,0.35)}
 .btn-telegram-hero{display:inline-flex;align-items:center;gap:8px;background:rgba(34,158,217,0.1);border:1px solid rgba(34,158,217,0.25);color:#5bc8f5;font-weight:700;font-size:15px;padding:16px 36px;border-radius:10px;text-decoration:none;transition:all .2s}
 .btn-telegram-hero:hover{background:rgba(34,158,217,0.2)}
 
 /* STATS */
-.stats-bar{display:flex;margin:56px auto 0;max-width:750px;background:rgba(255,255,255,0.04);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);box-shadow:0 4px 24px rgba(0,0,0,0.3);border-radius:18px;overflow:hidden;animation:fadeUp .6s .4s ease both}
+.stats-bar{display:flex;margin:56px auto 0;max-width:750px;background:rgba(255,255,255,0.025);border:1px solid var(--bord);border-radius:18px;overflow:hidden;animation:fadeUp .6s .4s ease both}
 .stat{flex:1;padding:22px 16px;text-align:center;border-right:1px solid var(--bord)}
 .stat:last-child{border-right:none}
 .stat-n{font-family:'Playfair Display',serif;font-size:30px;font-weight:900;color:var(--text);letter-spacing:-1px;line-height:1}
@@ -91,8 +91,8 @@ section{padding:80px 40px;max-width:1200px;margin:0 auto}
 
 /* INCLUDES */
 .inc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:44px}
-.inc-card{background:var(--card);border:1px solid var(--bord);border-radius:16px;padding:26px 24px;display:flex;align-items:flex-start;gap:14px;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;cursor:default}
-.inc-card:hover{transform:translateY(-2px) scale(1.01);border-color:rgba(200,140,60,0.3);box-shadow:0 8px 32px rgba(200,140,60,0.08)}
+.inc-card{background:var(--card);border:1px solid var(--bord);border-radius:16px;padding:26px 24px;display:flex;align-items:flex-start;gap:14px;transition:all .25s}
+.inc-card:hover{border-color:rgba(201,132,74,0.35);transform:translateY(-3px);box-shadow:0 16px 48px rgba(201,132,74,0.08)}
 .inc-ic{font-size:24px;flex-shrink:0;margin-top:2px}
 .inc-t{font-size:14px;font-weight:800;color:var(--text);margin-bottom:5px}
 .inc-d{font-size:12.5px;color:var(--mut);line-height:1.65}
@@ -213,7 +213,7 @@ footer{border-top:1px solid var(--bord);padding:32px 40px;display:flex;align-ite
 .steps-line{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:48px;position:relative}
 .step-card{background:var(--card);border:1px solid var(--bord);border-radius:18px;padding:28px 24px;transition:all .25s;display:flex;flex-direction:column;min-height:210px}
 .step-card:hover{border-color:rgba(201,132,74,0.35);transform:translateY(-4px);box-shadow:0 20px 60px rgba(201,132,74,0.08)}
-.step-num-big{font-family:'Playfair Display',serif;font-size:36px;font-weight:900;color:var(--gold);line-height:1;margin-bottom:16px;opacity:.9;width:52px;height:52px;border-radius:50%;border:1px solid rgba(200,140,60,0.4);display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(200,140,60,0.15)}
+.step-num-big{font-family:'Playfair Display',serif;font-size:40px;font-weight:900;color:var(--gold);line-height:1;margin-bottom:16px;opacity:.9}
 .step-head{font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:-.3px}
 .step-text{font-size:13px;color:var(--mut);line-height:1.65;flex:1}
 .step-action{margin-top:14px;font-size:13px;font-weight:700;color:var(--gold);text-decoration:none;transition:color .2s}
@@ -224,20 +224,6 @@ footer{border-top:1px solid var(--bord);padding:32px 40px;display:flex;align-ite
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 .reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
 .reveal.visible{opacity:1;transform:translateY(0)}
-
-/* Staggered card reveal — triggered when parent container gets .visible */
-.inc-grid .inc-card,.steps-line .step-card,.how-grid .how-card,.testi-grid .testi-card{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
-.inc-grid.visible .inc-card,.steps-line.visible .step-card,.how-grid.visible .how-card,.testi-grid.visible .testi-card{opacity:1;transform:translateY(0)}
-.inc-grid.visible .inc-card:nth-child(2),.testi-grid.visible .testi-card:nth-child(2){transition-delay:.07s}
-.inc-grid.visible .inc-card:nth-child(3),.testi-grid.visible .testi-card:nth-child(3){transition-delay:.14s}
-.inc-grid.visible .inc-card:nth-child(4),.testi-grid.visible .testi-card:nth-child(4){transition-delay:.21s}
-.inc-grid.visible .inc-card:nth-child(5){transition-delay:.28s}
-.inc-grid.visible .inc-card:nth-child(6){transition-delay:.35s}
-.steps-line.visible .step-card:nth-child(2){transition-delay:.08s}
-.steps-line.visible .step-card:nth-child(3){transition-delay:.16s}
-.steps-line.visible .step-card:nth-child(4){transition-delay:.24s}
-.how-grid.visible .how-card:nth-child(2){transition-delay:.1s}
-.how-grid.visible .how-card:nth-child(3){transition-delay:.2s}
 
 /* Chart draw animation */
 #chart-line{stroke-dasharray:900;stroke-dashoffset:900}
@@ -304,7 +290,7 @@ footer{border-top:1px solid var(--bord);padding:32px 40px;display:flex;align-ite
   <p class="hero-sub">Experimento real de trading algorítmico por <strong>Ezequiel Sack</strong>. Opera Bitcoin en Bybit automáticamente — vos solo mirás.</p>
   <div class="hero-btns">
     <a href="https://partner.bybit.com/b/59453" target="_blank" class="btn-primary">🚀 Paso 1 · Crear cuenta en Bybit →</a>
-    <a href="https://github.com/EzequielSack/autobot/releases/latest/download/AUTOBOT.zip" download class="btn-ghost">⬇ Paso 2 · Descargar AUTOBOT</a>
+    <a href="https://github.com/EzequielSack/autobot/releases/download/v3.0-multipar/AUTOBOT.zip" class="btn-ghost">⬇ Paso 2 · Descargar AUTOBOT</a>
   </div>
 
   <div class="stats-bar">
@@ -365,7 +351,7 @@ footer{border-top:1px solid var(--bord);padding:32px 40px;display:flex;align-ite
       <div class="step-num-big">2</div>
       <div class="step-head">Descargá AUTOBOT</div>
       <div class="step-text">Un solo archivo. Sin instalar Python ni nada técnico. Doble click y se abre.</div>
-      <a href="https://github.com/EzequielSack/autobot/releases/latest/download/AUTOBOT.zip" download class="step-action">Descargar →</a>
+      <a href="https://github.com/EzequielSack/autobot/releases/download/v3.0-multipar/AUTOBOT.zip" class="step-action">Descargar →</a>
     </div>
     <div class="step-card">
       <div class="step-num-big">3</div>
@@ -402,8 +388,7 @@ footer{border-top:1px solid var(--bord);padding:32px 40px;display:flex;align-ite
       <div class="res-chart reveal">
         <div class="chart-lbl">Curva de equity · $300 iniciales</div>
         <svg class="chart-svg" viewBox="0 0 400 185" preserveAspectRatio="none">
-          <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c9844a" stop-opacity="0.35"/><stop offset="100%" stop-color="#c9844a" stop-opacity="0"/></linearGradient><linearGradient id="equity-grd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c9844a" stop-opacity="0.15"/><stop offset="100%" stop-color="#c9844a" stop-opacity="0"/></linearGradient></defs>
-          <path d="M0,175 L20,170 L40,165 L60,168 L80,160 L100,150 L115,155 L130,140 L150,125 L170,120 L185,130 L200,105 L220,90 L240,75 L255,85 L270,65 L290,47 L310,37 L330,28 L350,18 L375,12 L400,8 L400,185 L0,185Z" fill="url(#equity-grd)"/>
+          <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c9844a" stop-opacity="0.35"/><stop offset="100%" stop-color="#c9844a" stop-opacity="0"/></linearGradient></defs>
           <path id="chart-area" d="M0,175 L20,170 L40,165 L60,168 L80,160 L100,150 L115,155 L130,140 L150,125 L170,120 L185,130 L200,105 L220,90 L240,75 L255,85 L270,65 L290,47 L310,37 L330,28 L350,18 L375,12 L400,8 L400,185 L0,185Z" fill="url(#cg)"/>
           <path id="chart-line" d="M0,175 L20,170 L40,165 L60,168 L80,160 L100,150 L115,155 L130,140 L150,125 L170,120 L185,130 L200,105 L220,90 L240,75 L255,85 L270,65 L290,47 L310,37 L330,28 L350,18 L375,12 L400,8" fill="none" stroke="#c9844a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           <line x1="0" y1="175" x2="400" y2="175" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="6,4"/>
@@ -442,7 +427,7 @@ footer{border-top:1px solid var(--bord);padding:32px 40px;display:flex;align-ite
     <p>Creá tu cuenta en Bybit, cargá USDT y conectá AUTOBOT en minutos.</p>
     <div class="cta-btns">
       <a href="https://partner.bybit.com/b/59453" target="_blank" class="btn-primary" style="font-size:16px;padding:18px 44px">🚀 Crear cuenta en Bybit →</a>
-      <a href="https://github.com/EzequielSack/autobot/releases/latest/download/AUTOBOT.zip" download class="btn-ghost" style="font-size:16px;padding:18px 32px">⬇ Descargar AUTOBOT</a>
+      <a href="https://github.com/EzequielSack/autobot/releases/download/v3.0-multipar/AUTOBOT.zip" class="btn-ghost" style="font-size:16px;padding:18px 32px">⬇ Descargar AUTOBOT</a>
     </div>
     <div class="cta-note">Proyecto experimental y educativo por Ezequiel Sack.<br>No es asesoramiento financiero. Solo operá con lo que podés perder.</div>
   </div>
@@ -485,9 +470,6 @@ fetchBTC();setInterval(fetchBTC,30000);
 
 // Email
 function handleEmail(e){e.preventDefault();const note=document.getElementById('email-note');note.textContent='✅ Te avisamos cuando el bot opere. ¡Gracias!';note.style.color='#c9844a';}
-
-// Navbar blur on scroll
-(function(){const nav=document.querySelector('nav');if(!nav)return;window.addEventListener('scroll',()=>{if(window.scrollY>20){nav.style.backdropFilter='blur(28px)';nav.style.backgroundColor='rgba(8,9,16,0.97)';nav.style.borderBottom='1px solid rgba(201,132,74,0.18)';}else{nav.style.backdropFilter='';nav.style.backgroundColor='';nav.style.borderBottom='';}},{passive:true});})();
 </script>
 </body>
 </html>
