@@ -232,22 +232,27 @@ def calc_atr(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+# Cache HTF trend — EMA 1h cambia lento, evitamos 60 llamadas/hora innecesarias
+_HTF_CACHE = {}        # {sym: (timestamp, trend)}
+_HTF_TTL   = 300       # 5 min
+
 def get_htf_trend(symbol: str) -> str:
-    """
-    EL RÍO — EMA 50 en 1h para saber la tendencia mayor.
-    Solo operamos a favor del río.
-    Retorna: 'BULLISH', 'BEARISH' o 'NEUTRAL'
-    """
+    """EL RÍO — EMA 50 en 1h (con cache de 5 min)."""
+    ahora = time.time()
+    ent = _HTF_CACHE.get(symbol)
+    if ent and (ahora - ent[0]) < _HTF_TTL:
+        return ent[1]
     df_1h = get_klines(symbol, TIMEFRAME_HTF, limit=100)
     if df_1h.empty or len(df_1h) < EMA_HTF_PERIOD:
-        return "NEUTRAL"
-    ema50     = df_1h["close"].ewm(span=EMA_HTF_PERIOD, adjust=False).mean().iloc[-1]
-    precio_1h = df_1h["close"].iloc[-1]
-    if precio_1h > ema50 * 1.001:
-        return "BULLISH"
-    elif precio_1h < ema50 * 0.999:
-        return "BEARISH"
-    return "NEUTRAL"
+        trend = "NEUTRAL"
+    else:
+        ema50     = df_1h["close"].ewm(span=EMA_HTF_PERIOD, adjust=False).mean().iloc[-1]
+        precio_1h = df_1h["close"].iloc[-1]
+        if   precio_1h > ema50 * 1.001: trend = "BULLISH"
+        elif precio_1h < ema50 * 0.999: trend = "BEARISH"
+        else:                            trend = "NEUTRAL"
+    _HTF_CACHE[symbol] = (ahora, trend)
+    return trend
 
 
 def calc_volume_filter(df: pd.DataFrame) -> pd.DataFrame:

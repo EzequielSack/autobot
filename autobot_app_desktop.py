@@ -123,6 +123,10 @@ class BotEngine:
             "balance": 0, "pnl": 0, "pos": None, "pos_symbol": None,
             "ciclos": 0, "pares_activos": "BTC + ETH + SOL"
         }
+        # Cache HTF trend por símbolo: {sym: (timestamp, trend)}
+        # Se invalida cada 5 min (suficiente para EMA 1h que cambia lento)
+        self._htf_cache = {}
+        self._htf_cache_ttl = 300  # segundos
 
     # ── Datos ──────────────────────────────────────────────
     def get_klines(self, symbol, interval, limit=200):
@@ -237,13 +241,22 @@ class BotEngine:
         return df
 
     def get_htf_trend(self, symbol):
-        df=self.get_klines(symbol,TIMEFRAME_HTF,limit=100)
-        if df.empty or len(df)<EMA_HTF_PERIOD: return "NEUTRAL"
-        ema=df["close"].ewm(span=EMA_HTF_PERIOD,adjust=False).mean().iloc[-1]
-        p=df["close"].iloc[-1]
-        if p>ema*1.001: return "BULLISH"
-        if p<ema*0.999: return "BEARISH"
-        return "NEUTRAL"
+        # Cache de 5 min — EMA 1h cambia lento, evitamos 60 llamadas/hora innecesarias
+        ahora = time.time()
+        ent = self._htf_cache.get(symbol)
+        if ent and (ahora - ent[0]) < self._htf_cache_ttl:
+            return ent[1]
+        df = self.get_klines(symbol, TIMEFRAME_HTF, limit=100)
+        if df.empty or len(df) < EMA_HTF_PERIOD:
+            trend = "NEUTRAL"
+        else:
+            ema = df["close"].ewm(span=EMA_HTF_PERIOD, adjust=False).mean().iloc[-1]
+            p = df["close"].iloc[-1]
+            if   p > ema * 1.001: trend = "BULLISH"
+            elif p < ema * 0.999: trend = "BEARISH"
+            else:                  trend = "NEUTRAL"
+        self._htf_cache[symbol] = (ahora, trend)
+        return trend
 
     def get_signal(self, df, htf, symbol):
         """Señal con umbrales específicos del par."""
@@ -441,28 +454,40 @@ class BotEngine:
                 self.stats["pos_symbol"]=None
                 self.stats["pnl"]=0
 
-                # Escanear los 3 pares y elegir el mejor por score
-                candidatos = []
-                for sym in sorted(SYMBOLS, key=lambda s: PARES_CONFIG[s]["priority"]):
+                # Escanear los 3 pares en PARALELO (3-4x más rápido)
+                from concurrent.futures import ThreadPoolExecutor
+
+                def _eval_par(sym):
+                    """Evalúa un par. Devuelve dict si pasa filtros, None si no."""
                     htf = self.get_htf_trend(sym)
                     if htf == "NEUTRAL":
-                        self.log(f"🧭 [{sym}] tendencia 1h neutral","scan")
-                        continue
+                        return {"sym": sym, "skip": "tendencia 1h neutral"}
                     df = self.get_klines(sym, TIMEFRAME, limit=200)
-                    if df.empty: continue
+                    if df.empty:
+                        return None
                     df = self.add_sensors(df)
                     sig, mult = self.get_signal(df, htf, sym)
                     score = self.calc_signal_score(df, htf, sig, sym)
+                    return {"sym": sym, "sig": sig, "mult": mult,
+                            "df": df, "score": score, "htf": htf}
+
+                with ThreadPoolExecutor(max_workers=3) as ex:
+                    resultados = list(ex.map(_eval_par, SYMBOLS))
+
+                candidatos = []
+                for r in resultados:
+                    if r is None: continue
+                    if "skip" in r:
+                        self.log(f"🧭 [{r['sym']}] {r['skip']}", "scan")
+                        continue
+                    sym = r["sym"]
                     min_sc = PARES_CONFIG[sym]["min_score"]
-                    if sig != "NONE" and score >= min_sc:
-                        self.log(f"✅ [{sym}] {sig} | score {score} (min {min_sc})","signal")
-                        candidatos.append({
-                            "sym":sym, "sig":sig, "mult":mult,
-                            "df":df, "score":score
-                        })
+                    if r["sig"] != "NONE" and r["score"] >= min_sc:
+                        self.log(f"✅ [{sym}] {r['sig']} | score {r['score']} (min {min_sc})", "signal")
+                        candidatos.append(r)
                     else:
-                        razon = "sin señal" if sig=="NONE" else f"score {score} < {min_sc}"
-                        self.log(f"🔍 [{sym}] {razon}","scan")
+                        razon = "sin señal" if r["sig"] == "NONE" else f"score {r['score']} < {min_sc}"
+                        self.log(f"🔍 [{sym}] {razon}", "scan")
 
                 if not candidatos:
                     self.log(f"⏱ Ciclo {ciclo} — sin candidatos","scan")
