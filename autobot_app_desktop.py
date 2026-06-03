@@ -75,11 +75,13 @@ PARES_CONFIG = {
 }
 SYMBOLS = list(PARES_CONFIG.keys())   # los 3 pares operan real
 
-# Sesión, días y horas malas (común a los 3 pares)
-SESSION_START = 8
-SESSION_END   = 22
-HORAS_MALAS   = {10, 12, 13, 19, 21}
-DIAS_MALOS    = {4, 5}   # Viernes y Sábado
+# Sesión 24/7 — modo máximo volumen (sin filtros horarios)
+# Decisión del usuario: priorizar oportunidades sobre filtros conservadores.
+# Trade-off: los backtests con PF 1.40-2.40 fueron CON filtros — en vivo puede variar.
+SESSION_START = 0
+SESSION_END   = 24
+HORAS_MALAS   = set()      # sin horas malas
+DIAS_MALOS    = set()      # opera los 7 días
 MAX_PERDIDAS_CONSECUTIVAS = 4
 PAUSA_MINUTOS = 180
 DAILY_LOSS_LIMIT = 0.04   # 4% diario → pausa hasta nuevo día UTC

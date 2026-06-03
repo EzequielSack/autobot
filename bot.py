@@ -66,13 +66,13 @@ ADX_PERIOD    = 14
 ADX_THRESHOLD = 25
 
 # ─── FILTROS HORARIOS Y DIARIOS ───────────────────────────
-# Análisis cuantitativo identificó horas y días malos:
-SESSION_START = 8    # 08:00 UTC
-SESSION_END   = 22   # 22:00 UTC
-# Horas con PF < 1 dentro de la sesión — se saltan
-HORAS_MALAS   = {10, 12, 13, 19, 21}   # 12h agregado: 0% win rate, -$104.80 en backtest
-# Días malos: Viernes=4, Sábado=5 (0=Lunes)
-DIAS_MALOS    = {4, 5}              # Viernes y Sábado
+# Modo 24/7 — máximo volumen.
+# Decisión Jun 2026: priorizar oportunidades sobre filtros conservadores.
+# Trade-off: backtests con PF 1.40-2.40 usaban filtros — en vivo puede variar.
+SESSION_START = 0    # 24/7
+SESSION_END   = 24
+HORAS_MALAS   = set()   # sin horas malas
+DIAS_MALOS    = set()   # opera los 7 días
 
 # ─── CIRCUIT BREAKER ──────────────────────────────────────
 MAX_PERDIDAS_CONSECUTIVAS = 4       # pausa tras 4 pérdidas seguidas
