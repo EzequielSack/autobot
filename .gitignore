@@ -31,8 +31,13 @@ data/*.pkl
 logs/
 *.log
 
-# Zips de distribución
+# Zips y binarios de distribución (van por GitHub Releases, no por el repo)
 publicar/*.zip
+publicar/*.exe
+
+# Panel generado en vivo (muestra el saldo) y su baseline
+panel.html
+panel_baseline.json
 
 # Jupyter
 .ipynb_checkpoints/

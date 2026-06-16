@@ -1,10 +1,17 @@
-AUTOBOT - por Ezequiel Sack
+AUTOBOT v4.0 - por Ezequiel Sack
 ================================
+Estrategia de GRILLA (grid), conservadora.
+BTC en spot (sin apalancamiento) + SOL y ETH en futuros 2x.
+
 1. Doble click en AUTOBOT.exe
 2. Si Windows avisa: Mas info -> Ejecutar de todos modos
-3. Pega tu API Key y Secret de Bybit (cuenta con fondos)
-4. Iniciar bot
+3. Pega tu API Key y Secret de Bybit (cuenta con fondos USDT)
+4. Iniciar bot. El bot arma la grilla solo, segun tu capital.
 
-Proyecto experimental y educativo. No es asesoramiento financiero.
-Ezequiel Sack NO tiene acceso a tu dinero.
+Necesitas tener SPOT habilitado en Bybit para que opere BTC.
+Capital sugerido minimo: ~$50 USDT para que opere completo.
+
+Proyecto experimental y educativo. NO es asesoramiento financiero.
+La estrategia es nueva y NO tiene resultados de largo plazo todavia.
+Podes perder todo tu capital. Ezequiel Sack NO tiene acceso a tu dinero.
 Canal: https://www.youtube.com/@EzequielSack/
