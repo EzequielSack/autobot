@@ -460,25 +460,18 @@ class AutobotApp:
         # ── Selector de nivel de riesgo (apalancamiento) ──────────
         tk.Label(card, text="NIVEL DE RIESGO", font=("Segoe UI", 8, "bold"),
                  bg=CARD, fg=MUT).pack(anchor="w", padx=20, pady=(4, 2))
-        self.root.option_add("*TCombobox*Listbox.background", "#1a1b28")
-        self.root.option_add("*TCombobox*Listbox.foreground", TEXT)
-        self.root.option_add("*TCombobox*Listbox.selectBackground", GOLD)
-        try:
-            _st = ttk.Style(); _st.theme_use("clam")
-            _st.configure("Dark.TCombobox", fieldbackground="#1a1b28", background="#1a1b28",
-                foreground=TEXT, arrowcolor=GOLD, bordercolor=BORD)
-        except Exception:
-            pass
         self.modo_var = tk.StringVar(value=MODO_DEFAULT)
-        self.modo_combo = ttk.Combobox(card, textvariable=self.modo_var,
-            values=list(RISK_MODES.keys()), state="readonly",
-            font=("Segoe UI", 11), style="Dark.TCombobox")
-        self.modo_combo.pack(fill="x", padx=20, ipady=3)
+        self.modo_menu = tk.OptionMenu(card, self.modo_var, *RISK_MODES.keys(),
+            command=lambda v: self.modo_hint.config(text=self._modo_texto(v)))
+        self.modo_menu.config(bg=GOLD, fg="#0a0b14", activebackground=GOLD2,
+            activeforeground="#0a0b14", font=("Segoe UI", 11, "bold"), relief="flat",
+            bd=0, highlightthickness=0, cursor="hand2", anchor="w", padx=14, pady=6)
+        self.modo_menu["menu"].config(bg=CARD, fg=TEXT, activebackground=GOLD,
+            activeforeground="#0a0b14", font=("Segoe UI", 10), bd=0)
+        self.modo_menu.pack(fill="x", padx=20)
         self.modo_hint = tk.Label(card, text=self._modo_texto(MODO_DEFAULT),
             font=("Segoe UI", 8), bg=CARD, fg=MUT, justify="left", wraplength=740)
-        self.modo_hint.pack(anchor="w", padx=20, pady=(5, 10))
-        self.modo_combo.bind("<<ComboboxSelected>>",
-            lambda e: self.modo_hint.config(text=self._modo_texto(self.modo_var.get())))
+        self.modo_hint.pack(anchor="w", padx=20, pady=(6, 10))
 
         btnrow = tk.Frame(card, bg=CARD); btnrow.pack(fill="x", padx=20, pady=(2, 18))
         self.btn_start = self._boton(btnrow, "▶  Iniciar bot", self.iniciar, primary=True)
