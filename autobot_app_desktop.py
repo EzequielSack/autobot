@@ -1,11 +1,12 @@
 """
 ╔══════════════════════════════════════════════════════════╗
-║   AUTOBOT v4.0 — App de Escritorio · Estrategia GRID      ║
+║   AUTOBOT v4.1 — App de Escritorio · Estrategia GRID      ║
 ║   Por Ezequiel Sack — Proyecto experimental               ║
 ║                                                          ║
-║   Estrategia de GRILLA (grid), conservadora:              ║
-║     • BTC en SPOT  → SIN apalancamiento, sin liquidación  ║
-║     • SOL y ETH en futuros 2x con órdenes maker           ║
+║   Estrategia de GRILLA (grid) con 3 niveles de riesgo:    ║
+║     • BTC en SPOT  → SIN apalancamiento (en todos)        ║
+║     • SOL y ETH en futuros con órdenes maker              ║
+║       Conservador 2x · Medio 3x · Agresivo 5x             ║
 ║     • Compra barato / vende caro en cada oscilación       ║
 ║     • Se ajusta SOLO al capital de cada usuario           ║
 ║                                                          ║
@@ -33,18 +34,23 @@ except ImportError:
 # ═══════════════════════════════════════════════════════════
 #   PARÁMETROS DE LA ESTRATEGIA GRID (conservadora)
 # ═══════════════════════════════════════════════════════════
-LEVERAGE_FUT     = 2          # apalancamiento bajo en futuros (SOL/ETH)
 LOOP_SLEEP       = 15         # segundos entre revisiones
 
-# Cuánto del capital total se asigna como inventario MÁXIMO por mercado.
-# El resto queda como colchón de seguridad (no se compromete).
-ALLOC_FUT_PCT    = 0.12       # 12% por cada par de futuros (SOL, ETH)
-ALLOC_SPOT_PCT   = 0.18       # 18% para BTC spot
-#   → máx comprometido ≈ 12% + 12% + 18% = 42% · queda ~58% de colchón
+# ── NIVELES DE RIESGO (el usuario elige antes de iniciar) ─────────────────────
+# BTC SIEMPRE en spot 0x (ancla segura, no liquidable) en TODOS los modos.
+# A mayor apalancamiento → más inventario y volumen, PERO freno (stop) más
+# ajustado para que la liquidación nunca se alcance. La liquidación a Nx está
+# a ~(100/N)% en contra; el freno cierra MUCHO antes.
+RISK_MODES = {
+    #              apalanc.   inventario/par   freno        niveles
+    "Conservador": {"lev": 2, "alloc_fut": 0.12, "stop_fut": 0.030, "niveles_fut": 8},
+    "Medio":       {"lev": 3, "alloc_fut": 0.18, "stop_fut": 0.025, "niveles_fut": 8},
+    "Agresivo":    {"lev": 5, "alloc_fut": 0.25, "stop_fut": 0.020, "niveles_fut": 8},
+}
+MODO_DEFAULT     = "Conservador"
 
-NIVELES_FUT      = 8          # niveles por lado en futuros
+ALLOC_SPOT_PCT   = 0.18       # 18% para BTC spot (igual en todos los modos)
 SPACING_FUT      = 0.0025     # 0.25% entre niveles (futuros)
-STOP_FUT         = 0.030      # si el precio se va 3% del centro → corta y cierra
 
 NIVELES_SPOT     = 6          # compras escalonadas en BTC spot
 SPACING_SPOT     = 0.010      # 1.0% entre niveles (spot, fee más caro)
@@ -81,8 +87,10 @@ def _round_down(value: Decimal, unit: Decimal) -> Decimal:
 #   MOTOR GRID (futuros SOL/ETH + spot BTC), auto-dimensionado
 # ═══════════════════════════════════════════════════════════
 class GridBotEngine:
-    def __init__(self, api_key, api_secret, testnet, log_callback):
+    def __init__(self, api_key, api_secret, testnet, log_callback, modo="Conservador"):
         self.testnet = testnet
+        self.modo = modo if modo in RISK_MODES else "Conservador"
+        self.mc = RISK_MODES[self.modo]
         self.session = HTTP(testnet=testnet, api_key=api_key,
                             api_secret=api_secret, recv_window=15000)
         self.log = log_callback
@@ -148,20 +156,21 @@ class GridBotEngine:
             try:
                 tick, step, min_qty, _ = self._instrument("linear", sym)
                 price = self._precio("linear", sym)
-                alloc = equity * ALLOC_FUT_PCT
-                qty = _round_down(Decimal(str(alloc / price / NIVELES_FUT)), step)
-                niveles = NIVELES_FUT
+                alloc = equity * self.mc["alloc_fut"]
+                niv = self.mc["niveles_fut"]
+                qty = _round_down(Decimal(str(alloc / price / niv)), step)
+                niveles = niv
                 if qty < min_qty:
-                    # No entran 8 niveles → ver cuántos de tamaño mínimo entran
+                    # No entran todos los niveles → ver cuántos de tamaño mínimo entran
                     posibles = int((Decimal(str(alloc / price)) / min_qty))
                     if posibles < 1:
                         self.log(f"⚠ {sym}: capital chico, no se opera este par", "wait")
                         continue
                     qty = _round_down(min_qty, step)
-                    niveles = min(NIVELES_FUT, posibles)
+                    niveles = min(niv, posibles)
                 self.specs[sym] = {"cat": "linear", "tick": tick, "step": step,
                                    "qty": qty, "niveles": niveles, "spacing": SPACING_FUT,
-                                   "stop": STOP_FUT}
+                                   "stop": self.mc["stop_fut"]}
             except Exception as e:
                 self.log(f"⚠ {sym}: {e}", "err")
         # Spot BTC
@@ -191,7 +200,7 @@ class GridBotEngine:
     def _set_leverage(self, sym):
         try:
             self.session.set_leverage(category="linear", symbol=sym,
-                buyLeverage=str(LEVERAGE_FUT), sellLeverage=str(LEVERAGE_FUT))
+                buyLeverage=str(self.mc["lev"]), sellLeverage=str(self.mc["lev"]))
         except Exception:
             pass
 
@@ -336,8 +345,9 @@ class GridBotEngine:
 
     def run(self):
         self.log("=" * 46, "sys")
-        self.log("🤖 AUTOBOT v4.0 — Estrategia GRID conservadora", "sys")
-        self.log("BTC en spot (sin apalancamiento) · SOL y ETH en futuros 2x", "sys")
+        self.log("🤖 AUTOBOT v4.1 — Estrategia GRID", "sys")
+        self.log(f"Modo: {self.modo}  ·  SOL/ETH a {self.mc['lev']}x  ·  BTC spot 0x", "sys")
+        self.log(f"Freno de seguridad: corta al {self.mc['stop_fut']*100:.1f}% del centro", "sys")
         self.log("=" * 46, "sys")
         equity = self.get_equity()
         if equity < 10:
@@ -399,7 +409,7 @@ class AutobotApp:
         self.status_lbl.pack(side="right", pady=(6, 0))
 
         tk.Label(self.root,
-                 text="⚗ Experimental · Grid conservador (BTC sin apalancamiento) · No es asesoramiento financiero",
+                 text="⚗ Experimental · Grid configurable (BTC sin apalancamiento) · No es asesoramiento financiero",
                  font=("Segoe UI", 8), bg=BG, fg=MUT).pack(anchor="w", padx=24)
 
         card = tk.Frame(self.root, bg=CARD, highlightbackground=BORD, highlightthickness=1)
@@ -438,6 +448,30 @@ class AutobotApp:
             variable=self.testnet_var, bg=CARD, fg=MUT, selectcolor=CARD,
             activebackground=CARD, activeforeground=TEXT, font=("Segoe UI", 9),
             bd=0, highlightthickness=0).pack(anchor="w", padx=18, pady=(2, 8))
+
+        # ── Selector de nivel de riesgo (apalancamiento) ──────────
+        tk.Label(card, text="NIVEL DE RIESGO", font=("Segoe UI", 8, "bold"),
+                 bg=CARD, fg=MUT).pack(anchor="w", padx=20, pady=(4, 2))
+        self.root.option_add("*TCombobox*Listbox.background", "#1a1b28")
+        self.root.option_add("*TCombobox*Listbox.foreground", TEXT)
+        self.root.option_add("*TCombobox*Listbox.selectBackground", GOLD)
+        try:
+            _st = ttk.Style(); _st.theme_use("clam")
+            _st.configure("Dark.TCombobox", fieldbackground="#1a1b28", background="#1a1b28",
+                foreground=TEXT, arrowcolor=GOLD, bordercolor=BORD)
+        except Exception:
+            pass
+        self.modo_var = tk.StringVar(value=MODO_DEFAULT)
+        self.modo_combo = ttk.Combobox(card, textvariable=self.modo_var,
+            values=list(RISK_MODES.keys()), state="readonly",
+            font=("Segoe UI", 11), style="Dark.TCombobox")
+        self.modo_combo.pack(fill="x", padx=20, ipady=3)
+        self.modo_hint = tk.Label(card, text=self._modo_texto(MODO_DEFAULT),
+            font=("Segoe UI", 8), bg=CARD, fg=MUT, justify="left", wraplength=740)
+        self.modo_hint.pack(anchor="w", padx=20, pady=(5, 10))
+        self.modo_combo.bind("<<ComboboxSelected>>",
+            lambda e: self.modo_hint.config(text=self._modo_texto(self.modo_var.get())))
+
         btnrow = tk.Frame(card, bg=CARD); btnrow.pack(fill="x", padx=20, pady=(2, 18))
         self.btn_start = self._boton(btnrow, "▶  Iniciar bot", self.iniciar, primary=True)
         self.btn_start.pack(side="left", fill="x", expand=True, padx=(0, 4))
@@ -459,6 +493,14 @@ class AutobotApp:
         return tk.Button(parent, text=text, command=cmd, font=("Segoe UI", 11, "bold"),
                 bg=bg, fg=fg, relief="flat", cursor="hand2", bd=0,
                 activebackground=GOLD2, pady=10)
+
+    def _modo_texto(self, m):
+        d = {
+            "Conservador": "🟢 Conservador — SOL/ETH 2x · BTC sin apalancamiento · freno 3%. El más seguro (recomendado).",
+            "Medio": "🟡 Medio — SOL/ETH 3x · más inventario y volumen · freno 2.5%. Más riesgo si hay tendencia fuerte.",
+            "Agresivo": "🔴 Agresivo — SOL/ETH 5x · máximo volumen · freno 2%. ⚠️ Riesgo alto. BTC igual sin apalancamiento.",
+        }
+        return d.get(m, "")
 
     # ── Panel claro (cards para cualquiera) ────────────────
     def _build_panel(self):
@@ -530,9 +572,17 @@ class AutobotApp:
             messagebox.showwarning("Faltan datos", "Completá API Key y API Secret.")
             return
         testnet = bool(self.testnet_var.get())
+        modo = self.modo_var.get() if hasattr(self, "modo_var") else MODO_DEFAULT
+        if modo == "Agresivo":
+            if not messagebox.askyesno("Modo Agresivo — ¿estás seguro?",
+                "El modo AGRESIVO usa 5x de apalancamiento y más inventario en SOL y ETH.\n\n"
+                "Genera más volumen, pero el riesgo de perder es MUCHO mayor si el mercado "
+                "se mueve fuerte en una dirección.\n\n"
+                "(BTC sigue sin apalancamiento.)\n\n¿Querés continuar en modo Agresivo?"):
+                return
         self._build_panel(); self._build_console()
         try:
-            self.engine = GridBotEngine(key, secret, testnet, self.log_threadsafe)
+            self.engine = GridBotEngine(key, secret, testnet, self.log_threadsafe, modo)
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo iniciar:\n{e}"); return
         self.btn_start.config(state="disabled", text="Conectando...")
