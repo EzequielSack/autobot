@@ -125,6 +125,14 @@ class GridBotEngine:
             return True, f"Conectado · Capital: ${eq:.2f} USDT", eq
         except Exception as e:
             txt = str(e)
+            if "10004" in txt or "sign" in txt.lower():
+                return False, ("El API Secret está mal copiado o no coincide con la API Key.\n\n"
+                               "Es el error más común. Solución:\n"
+                               "• Creá una API key NUEVA en Bybit.\n"
+                               "• Copiá la API Key Y el API Secret al instante\n"
+                               "  (el Secret se muestra UNA sola vez).\n"
+                               "• Pegalos sin espacios al inicio ni al final.\n"
+                               "• Permisos: Lectura + Trade (NO marques Retirar)."), 0.0
             if "401" in txt or "10003" in txt or "invalid" in txt.lower():
                 return False, ("No se pudo entrar a tu cuenta de Bybit.\n\n"
                                "• ¿Las claves son de tu cuenta real?\n"
