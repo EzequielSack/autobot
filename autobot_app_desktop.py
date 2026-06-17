@@ -20,8 +20,14 @@ import time
 import queue
 import os
 import sys
+import logging
 from datetime import datetime, date
 from decimal import Decimal, ROUND_DOWN
+
+# pybit dumpea cada request al log ("Request -> POST https://...") y satura
+# la pantalla con ruido. Lo silenciamos: solo mostramos nuestros mensajes.
+logging.getLogger("pybit").setLevel(logging.CRITICAL)
+logging.getLogger("pybit.unified_trading").setLevel(logging.CRITICAL)
 
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -221,6 +227,12 @@ class GridBotEngine:
                 **({"reduceOnly": False} if sp["cat"] == "linear" else {}))
             return r["result"]["orderId"]
         except Exception as e:
+            txt = str(e)
+            # Falta de fondos: no es un error de verdad, es que ya no entra más
+            # capital. No lo spameamos: devolvemos sentinela para frenar limpio.
+            if any(k in txt for k in ("170131", "110007", "Insufficient",
+                                      "not enough", "ab not enough", "balance")):
+                return "NO_FUNDS"
             self.log(f"❌ orden {sym}: {e}", "err")
             return None
 
@@ -234,6 +246,7 @@ class GridBotEngine:
         price = self._precio(sp["cat"], sym)
         sp["centro"] = price
         tick, step, qty = sp["tick"], sp["step"], sp["qty"]
+        sin_fondos = False
         if sp["cat"] == "linear":
             self._set_leverage(sym)
             for i in range(1, sp["niveles"] + 1):
@@ -241,13 +254,22 @@ class GridBotEngine:
                 spp = _round_down(Decimal(str(price * (1 + sp["spacing"] * i))), tick)
                 for side, p in (("Buy", bp), ("Sell", spp)):
                     oid = self._place(sym, side, qty, p)
+                    if oid == "NO_FUNDS":
+                        sin_fondos = True; break
                     if oid: self.activos[sym][oid] = {"side": side, "price": p}
+                if sin_fondos: break
         else:
             for i in range(1, sp["niveles"] + 1):
                 bp = _round_down(Decimal(str(price * (1 - sp["spacing"] * i))), tick)
                 oid = self._place(sym, "Buy", qty, bp)
+                if oid == "NO_FUNDS":
+                    sin_fondos = True; break
                 if oid: self.activos[sym][oid] = {"side": "Buy", "price": bp}
-        self.log(f"🌱 {sym.replace('USDT','')}: grilla puesta ({len(self.activos[sym])} órdenes)", "sys")
+        n = len(self.activos[sym])
+        self.log(f"🌱 {sym.replace('USDT','')}: grilla puesta ({n} órdenes)", "sys")
+        if sin_fondos:
+            self.log(f"ℹ {sym.replace('USDT','')}: se usó todo el capital disponible "
+                     f"para este mercado ({n} órdenes). Normal — el capital es limitado.", "wait")
 
     def _flatten(self, sym):
         """Cierra inventario de futuros a mercado (anti-tendencia)."""
@@ -306,7 +328,7 @@ class GridBotEngine:
                     continue
             self.log(f"✅ {sym.replace('USDT','')}: operación cerrada con ganancia", "trade")
             noid = self._place(sym, op["side"], sp["qty"], op["price"])
-            if noid: self.activos[sym][noid] = op
+            if noid and noid != "NO_FUNDS": self.activos[sym][noid] = op
 
     # ── Stats para el panel claro ──────────────────────────
     def _refrescar_stats(self):
@@ -365,7 +387,11 @@ class GridBotEngine:
         if not self.specs:
             self.log("⚠ No se pudo armar ninguna grilla con tu capital.", "err")
             return
-        for sym in self.specs:
+        # Sembramos BTC spot PRIMERO para asegurarle USDT libre; si lo dejamos
+        # último, los futuros reservan todo el saldo y BTC queda sin fondos.
+        orden = ([SPOT] if SPOT in self.specs else []) + \
+                [s for s in self.specs if s != SPOT]
+        for sym in orden:
             r = self.specs[sym]
             self.log(f"📐 {sym.replace('USDT','')}: {r['niveles']} niveles × {r['qty']}", "sys")
             self._sembrar(sym)
