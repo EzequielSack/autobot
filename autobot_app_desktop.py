@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════╗
-║   AUTOBOT v4.1 — App de Escritorio · Estrategia GRID      ║
+║   AUTOBOT v4.4 — App de Escritorio · Estrategia GRID      ║
 ║   Por Ezequiel Sack — Proyecto experimental               ║
 ║                                                          ║
 ║   Estrategia de GRILLA (grid) con 3 niveles de riesgo:    ║
@@ -43,13 +43,13 @@ LOOP_SLEEP       = 15         # segundos entre revisiones
 # a ~(100/N)% en contra; el freno cierra MUCHO antes.
 RISK_MODES = {
     #              apalanc.   inventario/par   freno        niveles
-    "Conservador": {"lev": 2, "alloc_fut": 0.12, "stop_fut": 0.030, "niveles_fut": 8},
+    "Conservador": {"lev": 2, "alloc_fut": 0.08, "stop_fut": 0.030, "niveles_fut": 8},
     "Medio":       {"lev": 3, "alloc_fut": 0.18, "stop_fut": 0.025, "niveles_fut": 8},
     "Agresivo":    {"lev": 5, "alloc_fut": 0.25, "stop_fut": 0.020, "niveles_fut": 8},
 }
 MODO_DEFAULT     = "Conservador"
 
-ALLOC_SPOT_PCT   = 0.18       # 18% para BTC spot (igual en todos los modos)
+ALLOC_SPOT_PCT   = 0.12       # 12% para BTC spot (igual en todos los modos)
 SPACING_FUT      = 0.0025     # 0.25% entre niveles (futuros)
 
 NIVELES_SPOT     = 6          # compras escalonadas en BTC spot
@@ -353,7 +353,7 @@ class GridBotEngine:
 
     def run(self):
         self.log("=" * 46, "sys")
-        self.log("🤖 AUTOBOT v4.1 — Estrategia GRID", "sys")
+        self.log("🤖 AUTOBOT v4.4 — Estrategia GRID", "sys")
         self.log(f"Modo: {self.modo}  ·  SOL/ETH a {self.mc['lev']}x  ·  BTC spot 0x", "sys")
         self.log(f"Freno de seguridad: corta al {self.mc['stop_fut']*100:.1f}% del centro", "sys")
         self.log("=" * 46, "sys")
@@ -403,7 +403,7 @@ class AutobotApp:
         self.poll_stats()
 
     def setup_ui(self):
-        self.root.title("AUTOBOT v4.0 · por Ezequiel Sack")
+        self.root.title("AUTOBOT v4.4 · por Ezequiel Sack")
         self.root.configure(bg=BG)
         self.root.geometry("840x760")
         self.root.minsize(740, 660)
@@ -411,7 +411,7 @@ class AutobotApp:
         header = tk.Frame(self.root, bg=BG)
         header.pack(fill="x", padx=24, pady=(20, 8))
         tk.Label(header, text="AUTOBOT", font=("Segoe UI", 20, "bold"), bg=BG, fg=TEXT).pack(side="left")
-        tk.Label(header, text="  v4.0 · por Ezequiel Sack",
+        tk.Label(header, text="  v4.4 · por Ezequiel Sack",
                  font=("Segoe UI", 10), bg=BG, fg=MUT).pack(side="left", pady=(8, 0))
         self.status_lbl = tk.Label(header, text="● Detenido", font=("Segoe UI", 10, "bold"), bg=BG, fg=MUT)
         self.status_lbl.pack(side="right", pady=(6, 0))
