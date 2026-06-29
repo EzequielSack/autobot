@@ -1,4 +1,4 @@
-AUTOBOT v4.4 - por Ezequiel Sack
+AUTOBOT v4.5 - por Ezequiel Sack
 ================================
 Estrategia de GRILLA (grid), configurable.
 BTC siempre en spot (sin apalancamiento) + SOL y ETH en futuros.

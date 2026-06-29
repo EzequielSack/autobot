@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════╗
-║   AUTOBOT v4.4 — App de Escritorio · Estrategia GRID      ║
+║   AUTOBOT v4.5 — App de Escritorio · Estrategia GRID      ║
 ║   Por Ezequiel Sack — Proyecto experimental               ║
 ║                                                          ║
 ║   Estrategia de GRILLA (grid) con 3 niveles de riesgo:    ║
@@ -89,6 +89,11 @@ def _round_down(value: Decimal, unit: Decimal) -> Decimal:
     return (value / unit).quantize(Decimal("1"), rounding=ROUND_DOWN) * unit
 
 
+class RedCaida(Exception):
+    """Se agotaron los reintentos por un corte de internet. No es un bug."""
+    pass
+
+
 # ═══════════════════════════════════════════════════════════
 #   MOTOR GRID (futuros SOL/ETH + spot BTC), auto-dimensionado
 # ═══════════════════════════════════════════════════════════
@@ -98,8 +103,10 @@ class GridBotEngine:
         self.modo = modo if modo in RISK_MODES else "Conservador"
         self.mc = RISK_MODES[self.modo]
         self.session = HTTP(testnet=testnet, api_key=api_key,
-                            api_secret=api_secret, recv_window=15000)
+                            api_secret=api_secret, recv_window=15000,
+                            timeout=30)
         self.log = log_callback
+        self._ultimo_aviso_red = 0.0   # para no spamear avisos de internet caído
         self.running = False
         self.thread = None
         self.equity_inicio_dia = 0.0
@@ -113,9 +120,40 @@ class GridBotEngine:
             "ordenes": 0, "posiciones": [], "ciclos": 0, "estado": "—",
         }
 
+    # ── Resistencia a cortes de internet ───────────────────
+    @staticmethod
+    def _es_error_red(e):
+        t = str(e).lower()
+        return any(k in t for k in (
+            "timed out", "timeout", "max retries", "connection", "read timed",
+            "temporarily", "ssl", "name resolution", "remote end closed",
+            "connection aborted", "connection reset", "getaddrinfo"))
+
+    def _net(self, fn, *a, **kw):
+        """Llamada de LECTURA tolerante a cortes: reintenta en silencio.
+        Si internet no vuelve, avisa UNA vez (máx c/5 min) y corta el ciclo
+        con RedCaida — las órdenes siguen vivas en Bybit, no se pierde nada."""
+        ult = None
+        for intento in range(4):
+            try:
+                return fn(*a, **kw)
+            except Exception as e:
+                ult = e
+                if self._es_error_red(e):
+                    time.sleep(2 * (intento + 1))   # 2s, 4s, 6s, 8s
+                    continue
+                raise
+        ahora = time.time()
+        if ahora - self._ultimo_aviso_red > 300:
+            self._ultimo_aviso_red = ahora
+            self.log("🌐 Internet inestable — el bot espera y sigue solo cuando vuelve. "
+                     "Tus órdenes siguen activas en Bybit, no perdés nada.", "wait")
+        raise RedCaida(ult)
+
     # ── Balance / conexión ─────────────────────────────────
     def _acc(self):
-        return self.session.get_wallet_balance(accountType="UNIFIED")["result"]["list"][0]
+        return self._net(self.session.get_wallet_balance,
+                         accountType="UNIFIED")["result"]["list"][0]
 
     def get_equity(self):
         try:
@@ -160,7 +198,7 @@ class GridBotEngine:
                Decimal(it["lotSizeFilter"]["minOrderAmt"])
 
     def _precio(self, cat, sym):
-        return float(self.session.get_tickers(category=cat, symbol=sym)
+        return float(self._net(self.session.get_tickers, category=cat, symbol=sym)
                      ["result"]["list"][0]["lastPrice"])
 
     def _dimensionar(self, equity):
@@ -238,7 +276,8 @@ class GridBotEngine:
 
     def _open_ids(self, sym):
         sp = self.specs[sym]
-        r = self.session.get_open_orders(category=sp["cat"], symbol=sym)["result"]["list"]
+        r = self._net(self.session.get_open_orders,
+                      category=sp["cat"], symbol=sym)["result"]["list"]
         return {o["orderId"] for o in r}
 
     def _sembrar(self, sym):
@@ -274,7 +313,8 @@ class GridBotEngine:
     def _flatten(self, sym):
         """Cierra inventario de futuros a mercado (anti-tendencia)."""
         try:
-            for p in self.session.get_positions(category="linear", symbol=sym)["result"]["list"]:
+            for p in self._net(self.session.get_positions,
+                               category="linear", symbol=sym)["result"]["list"]:
                 size = float(p.get("size", 0) or 0)
                 if size > 0:
                     cs = "Sell" if p["side"] == "Buy" else "Buy"
@@ -286,7 +326,8 @@ class GridBotEngine:
 
     def _btc_balance(self):
         try:
-            a = self.session.get_wallet_balance(accountType="UNIFIED", coin="BTC")["result"]["list"][0]
+            a = self._net(self.session.get_wallet_balance,
+                          accountType="UNIFIED", coin="BTC")["result"]["list"][0]
             for c in a.get("coin", []):
                 if c.get("coin") == "BTC":
                     v = c.get("walletBalance") or "0"
@@ -303,7 +344,7 @@ class GridBotEngine:
             desvio = abs(price - sp["centro"]) / sp["centro"]
             if desvio > sp["stop"]:
                 self.log(f"🚨 {sym.replace('USDT','')}: mercado se movió mucho — pauso y protejo", "err")
-                try: self.session.cancel_all_orders(category="linear", symbol=sym)
+                try: self._net(self.session.cancel_all_orders, category="linear", symbol=sym)
                 except Exception: pass
                 self._flatten(sym)
                 self.activos[sym].clear()
@@ -345,7 +386,8 @@ class GridBotEngine:
             ordenes = sum(len(v) for v in self.activos.values())
             posiciones = []
             for sym in FUTUROS:
-                for p in self.session.get_positions(category="linear", symbol=sym)["result"]["list"]:
+                for p in self._net(self.session.get_positions,
+                                   category="linear", symbol=sym)["result"]["list"]:
                     if float(p.get("size", 0) or 0) > 0:
                         posiciones.append({
                             "par": sym.replace("USDT", ""),
@@ -375,7 +417,7 @@ class GridBotEngine:
 
     def run(self):
         self.log("=" * 46, "sys")
-        self.log("🤖 AUTOBOT v4.4 — Estrategia GRID", "sys")
+        self.log("🤖 AUTOBOT v4.5 — Estrategia GRID", "sys")
         self.log(f"Modo: {self.modo}  ·  SOL/ETH a {self.mc['lev']}x  ·  BTC spot 0x", "sys")
         self.log(f"Freno de seguridad: corta al {self.mc['stop_fut']*100:.1f}% del centro", "sys")
         self.log("=" * 46, "sys")
@@ -405,6 +447,8 @@ class GridBotEngine:
                     continue
                 try:
                     self._reconciliar(sym)
+                except RedCaida:
+                    pass   # corte de internet: ya se avisó, las órdenes siguen vivas
                 except Exception as e:
                     self.log(f"⚠ {sym}: {e}", "err")
             self._refrescar_stats()
@@ -429,7 +473,7 @@ class AutobotApp:
         self.poll_stats()
 
     def setup_ui(self):
-        self.root.title("AUTOBOT v4.4 · por Ezequiel Sack")
+        self.root.title("AUTOBOT v4.5 · por Ezequiel Sack")
         self.root.configure(bg=BG)
         self.root.geometry("840x760")
         self.root.minsize(740, 660)
@@ -437,7 +481,7 @@ class AutobotApp:
         header = tk.Frame(self.root, bg=BG)
         header.pack(fill="x", padx=24, pady=(20, 8))
         tk.Label(header, text="AUTOBOT", font=("Segoe UI", 20, "bold"), bg=BG, fg=TEXT).pack(side="left")
-        tk.Label(header, text="  v4.4 · por Ezequiel Sack",
+        tk.Label(header, text="  v4.5 · por Ezequiel Sack",
                  font=("Segoe UI", 10), bg=BG, fg=MUT).pack(side="left", pady=(8, 0))
         self.status_lbl = tk.Label(header, text="● Detenido", font=("Segoe UI", 10, "bold"), bg=BG, fg=MUT)
         self.status_lbl.pack(side="right", pady=(6, 0))
