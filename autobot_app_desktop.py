@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════╗
-║   AUTOBOT v4.5 — App de Escritorio · Estrategia GRID      ║
+║   AUTOBOT v4.6 — App de Escritorio · Estrategia GRID      ║
 ║   Por Ezequiel Sack — Proyecto experimental               ║
 ║                                                          ║
 ║   Estrategia de GRILLA (grid) con 3 niveles de riesgo:    ║
@@ -125,9 +125,22 @@ class GridBotEngine:
     def _es_error_red(e):
         t = str(e).lower()
         return any(k in t for k in (
-            "timed out", "timeout", "max retries", "connection", "read timed",
-            "temporarily", "ssl", "name resolution", "remote end closed",
-            "connection aborted", "connection reset", "getaddrinfo"))
+            # timeouts y reintentos
+            "timed out", "timeout", "max retries", "read timed",
+            # conexión caída
+            "connection", "connectionpool", "connection aborted",
+            "connection reset", "remote end closed", "newconnectionerror",
+            "ssl", "temporarily",
+            # DNS / internet totalmente caído (PC dormida, router reiniciado)
+            "getaddrinfo", "name resolution", "nameresolution",
+            "failed to resolve", "11001", "11002", "no address"))
+
+    @staticmethod
+    def _es_dns(e):
+        """Internet TOTALMENTE caído (no se resuelve el dominio), no solo lento."""
+        t = str(e).lower()
+        return any(k in t for k in ("getaddrinfo", "resolve", "11001",
+                                    "11002", "nameresolution", "no address"))
 
     def _net(self, fn, *a, **kw):
         """Llamada de LECTURA tolerante a cortes: reintenta en silencio.
@@ -146,8 +159,13 @@ class GridBotEngine:
         ahora = time.time()
         if ahora - self._ultimo_aviso_red > 300:
             self._ultimo_aviso_red = ahora
-            self.log("🌐 Internet inestable — el bot espera y sigue solo cuando vuelve. "
-                     "Tus órdenes siguen activas en Bybit, no perdés nada.", "wait")
+            if self._es_dns(ult):
+                self.log("🌐 Sin internet (no se llega a Bybit). Suele pasar si la PC "
+                         "se durmió o el router se cortó. El bot reintenta solo y sigue "
+                         "cuando vuelve. Tus órdenes siguen activas en Bybit.", "wait")
+            else:
+                self.log("🌐 Internet inestable — el bot espera y sigue solo cuando vuelve. "
+                         "Tus órdenes siguen activas en Bybit, no perdés nada.", "wait")
         raise RedCaida(ult)
 
     # ── Balance / conexión ─────────────────────────────────
@@ -417,7 +435,7 @@ class GridBotEngine:
 
     def run(self):
         self.log("=" * 46, "sys")
-        self.log("🤖 AUTOBOT v4.5 — Estrategia GRID", "sys")
+        self.log("🤖 AUTOBOT v4.6 — Estrategia GRID", "sys")
         self.log(f"Modo: {self.modo}  ·  SOL/ETH a {self.mc['lev']}x  ·  BTC spot 0x", "sys")
         self.log(f"Freno de seguridad: corta al {self.mc['stop_fut']*100:.1f}% del centro", "sys")
         self.log("=" * 46, "sys")
@@ -473,7 +491,7 @@ class AutobotApp:
         self.poll_stats()
 
     def setup_ui(self):
-        self.root.title("AUTOBOT v4.5 · por Ezequiel Sack")
+        self.root.title("AUTOBOT v4.6 · por Ezequiel Sack")
         self.root.configure(bg=BG)
         self.root.geometry("840x760")
         self.root.minsize(740, 660)
@@ -481,7 +499,7 @@ class AutobotApp:
         header = tk.Frame(self.root, bg=BG)
         header.pack(fill="x", padx=24, pady=(20, 8))
         tk.Label(header, text="AUTOBOT", font=("Segoe UI", 20, "bold"), bg=BG, fg=TEXT).pack(side="left")
-        tk.Label(header, text="  v4.5 · por Ezequiel Sack",
+        tk.Label(header, text="  v4.6 · por Ezequiel Sack",
                  font=("Segoe UI", 10), bg=BG, fg=MUT).pack(side="left", pady=(8, 0))
         self.status_lbl = tk.Label(header, text="● Detenido", font=("Segoe UI", 10, "bold"), bg=BG, fg=MUT)
         self.status_lbl.pack(side="right", pady=(6, 0))
